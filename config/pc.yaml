@@ -1,7 +1,7 @@
 proxies:
   - name: 🇺🇸 洛杉矶
     type: vless
-    server: 154.12.39.158
+    server: 154.9.254.179
     port: 24092
     uuid: bf4ca661-7b25-4ebc-96f0-e2cec03c809e
     network: tcp
