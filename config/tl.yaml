@@ -1,0 +1,77 @@
+proxies:
+  - name: Los Angeles
+    type: vless
+    server: 38.92.15.185
+    port: 27788
+    uuid: 9cc18bb5-770a-4963-b5c9-c168a32ebd36
+    network: tcp
+    tls: true
+    encryption: none
+    udp: false
+    servername: www.tesla.com
+    client-fingerprint: chrome
+
+    reality-opts:
+      public-key: LT5MkMIWYNoAg8j3PginpritGSfE-gGgZi-Xhdy9g3s
+      short-id: "65fac6"
+      spider-x: "/"
+
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - Los Angeles
+      - DIRECT
+
+rule-providers:
+  private:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  reject:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/google.txt
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+rules:
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,apple,DIRECT
+  - RULE-SET,google,PROXY
+  - RULE-SET,proxy,PROXY
+  - RULE-SET,direct,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
