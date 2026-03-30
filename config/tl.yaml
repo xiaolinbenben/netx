@@ -1,5 +1,5 @@
 proxies:
-  - name: Los Angeles
+  - name: Los Angeles-DC
     type: vless
     server: 38.92.15.185
     port: 27788
@@ -38,7 +38,7 @@ proxy-groups:
   - name: PROXY
     type: select
     proxies:
-      - Los Angeles
+      - Los Angeles-DC
       - Singapore
       - Singapore-2
       - DIRECT

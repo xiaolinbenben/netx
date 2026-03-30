@@ -1,5 +1,5 @@
 proxies:
-  - name: 🇺🇸 洛杉矶
+  - name: Los Angeles-Resi
     type: vless
     server: 154.9.254.179
     port: 24092
@@ -15,7 +15,7 @@ proxies:
       short-id: "080b527f"
       spider-x: "/"
 
-  - name: 🇺🇸 洛杉矶-TL
+  - name: Los Angeles-DC
     type: vless
     server: 38.92.15.185
     port: 27788
@@ -31,12 +31,32 @@ proxies:
       short-id: "65fac6"
       spider-x: "/"
 
+  - name: Singapore
+    type: hysteria2
+    server: 43.199.123.202
+    port: 11152
+    password: 9aaf0c88-b1ba-42ee-9c3d-a862c4eb0b49
+    udp: true
+    skip-cert-verify: true
+    alpn:
+      - h3
+
+  - name: Singapore-2
+    type: hysteria2
+    server: 52.221.30.54
+    port: 52915
+    password: 8c7a8f84-8964-48ba-9f58-897bd50e2b3e
+    udp: true
+    skip-cert-verify: true
+
 proxy-groups:
   - name: PROXY
     type: select
     proxies:
-      - 🇺🇸 洛杉矶
-      - 🇺🇸 洛杉矶-TL
+      - Los Angeles-Resi
+      - Los Angeles-DC
+      - Singapore
+      - Singapore-2
       - DIRECT
 
 rule-providers:
