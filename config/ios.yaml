@@ -15,11 +15,28 @@ proxies:
       short-id: "080b527f"
       spider-x: "/"
 
+  - name: 🇺🇸 洛杉矶-TL
+    type: vless
+    server: 38.92.15.185
+    port: 27788
+    uuid: 9cc18bb5-770a-4963-b5c9-c168a32ebd36
+    network: tcp
+    tls: true
+    encryption: none
+    udp: false
+    servername: www.tesla.com
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: LT5MkMIWYNoAg8j3PginpritGSfE-gGgZi-Xhdy9g3s
+      short-id: "65fac6"
+      spider-x: "/"
+
 proxy-groups:
   - name: PROXY
     type: select
     proxies:
       - 🇺🇸 洛杉矶
+      - 🇺🇸 洛杉矶-TL
       - DIRECT
 
 rule-providers:
