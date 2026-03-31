@@ -16,7 +16,7 @@ proxies:
       short-id: "65fac6"
       spider-x: "/"
 
-  - name: Singapore
+  - name: Hong Kong
     type: hysteria2
     server: 43.199.123.202
     port: 11152
@@ -26,7 +26,7 @@ proxies:
     alpn:
       - h3
 
-  - name: Singapore-2
+  - name: Singapore
     type: hysteria2
     server: 52.221.30.54
     port: 52915
@@ -39,8 +39,8 @@ proxy-groups:
     type: select
     proxies:
       - Los Angeles-DC
+      - Hong Kong
       - Singapore
-      - Singapore-2
       - DIRECT
 
 rule-providers:
