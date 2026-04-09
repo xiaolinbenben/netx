@@ -28,11 +28,13 @@ proxies:
 
   - name: Singapore
     type: hysteria2
-    server: 52.221.30.54
-    port: 52915
-    password: 8c7a8f84-8964-48ba-9f58-897bd50e2b3e
+    server: 13.228.29.207
+    port: 18888
+    password: 765c667a-5611-4025-8705-fb818204a686
     udp: true
     skip-cert-verify: true
+    alpn:
+      - h3
 
 proxy-groups:
   - name: PROXY
