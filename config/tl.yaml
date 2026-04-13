@@ -36,23 +36,6 @@ proxies:
     alpn:
       - h3
 
-  - name: my-qgiok6da
-    type: vless
-    server: xui-my.linzhiqing.dev
-    port: 40703
-    uuid: 5522eea8-44d1-4ade-ae71-cc716d7fde1c
-    network: tcp
-    tls: true
-    encryption: none
-    udp: false
-    servername: www.oracle.com
-    client-fingerprint: chrome
-
-    reality-opts:
-      public-key: 38BuXMUNSRgvU4NxnJtlSeSbJkOkF_vH1RdPM7mL3xo
-      short-id: "463b57441b"
-      spider-x: "/"
-
 proxy-groups:
   - name: PROXY
     type: select
@@ -60,7 +43,6 @@ proxy-groups:
       - Los Angeles-DC
       - Hong Kong
       - Singapore
-      - my-qgiok6da
       - DIRECT
 
 rule-providers:
