@@ -53,6 +53,16 @@ proxies:
     alpn:
       - h3
 
+  - name: Malaysia
+    type: hysteria2
+    server: 31.97.70.10
+    port: 18888
+    password: 78c615ec-76dd-422a-a843-102e5f86d526
+    udp: true
+    skip-cert-verify: true
+    alpn:
+      - h3
+
 proxy-groups:
   - name: PROXY
     type: select
@@ -61,6 +71,7 @@ proxy-groups:
       - Los Angeles-DC
       - Hong Kong
       - Singapore
+      - Malaysia
       - DIRECT
 
 rule-providers:
