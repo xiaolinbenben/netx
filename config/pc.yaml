@@ -63,10 +63,27 @@ proxies:
     alpn:
       - h3
 
+  - name: Tokyo
+    type: vless
+    server: 64.81.112.218
+    port: 443
+    uuid: d172cd60-40ae-4305-8ba7-482c7f9ff38e
+    network: tcp
+    tls: true
+    encryption: none
+    udp: false
+    servername: www.tesla.com
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: f-HxJGx2Sb1u2jX40oNvT_xXTHp06BFeKbg2Sh55bFI
+      short-id: "6bfaeb4d7e65"
+      spider-x: "/"
+
 proxy-groups:
   - name: PROXY
     type: select
     proxies:
+      - Tokyo
       - Los Angeles-Resi
       - Los Angeles-DC
       - Hong Kong
