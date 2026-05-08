@@ -43,16 +43,6 @@ proxies:
     alpn:
       - h3
 
-  - name: Singapore
-    type: hysteria2
-    server: 13.228.29.207
-    port: 18888
-    password: 765c667a-5611-4025-8705-fb818204a686
-    udp: true
-    skip-cert-verify: true
-    alpn:
-      - h3
-
   - name: Malaysia
     type: hysteria2
     server: 31.97.70.10
@@ -87,7 +77,6 @@ proxy-groups:
       - Los Angeles-Resi
       - Los Angeles-DC
       - Hong Kong
-      - Singapore
       - Malaysia
       - DIRECT
 
