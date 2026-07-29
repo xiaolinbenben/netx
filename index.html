@@ -871,39 +871,22 @@
     }
 
     .qr-panel {
-      width: min(360px, 100%);
-      padding: 22px;
-      border: 1px solid rgba(57, 255, 136, 0.36);
-      border-radius: var(--radius);
-      background: rgba(2, 12, 7, 0.96);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62), 0 0 42px rgba(57, 255, 136, 0.16);
-      text-align: center;
-    }
-
-    .qr-panel h3 {
-      margin-bottom: 16px;
-      font-size: 22px;
+      width: min(360px, 88vw);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .qr-panel img {
       display: block;
       width: 100%;
       max-width: 280px;
-      margin: 0 auto 18px;
+      margin: 0 auto;
       border-radius: 6px;
       background: #fff;
-    }
-
-    .qr-close {
-      width: 100%;
-      min-height: 42px;
-      border: 1px solid rgba(57, 255, 136, 0.5);
-      border-radius: var(--radius);
-      color: var(--green);
-      background: rgba(57, 255, 136, 0.06);
-      font: inherit;
-      font-weight: 800;
-      cursor: pointer;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62);
     }
 
     footer {
@@ -1248,10 +1231,8 @@
     <div class="shell">© NetX Enterprise Network Solution</div>
   </footer>
   <div class="qr-modal" id="qr-modal" aria-hidden="true">
-    <div class="qr-panel" role="dialog" aria-modal="true" aria-labelledby="qr-title">
-      <h3 id="qr-title">扫码联系我们</h3>
+    <div class="qr-panel" role="dialog" aria-modal="true" aria-label="联系二维码">
       <img src="weixin.jpg" alt="联系二维码">
-      <button class="qr-close" type="button" data-close-qr>关闭</button>
     </div>
   </div>
   <script>
@@ -1305,11 +1286,9 @@
         event.preventDefault();
         modal.classList.add("is-open");
         modal.setAttribute("aria-hidden", "false");
-        modal.querySelector("[data-close-qr]")?.focus();
       };
 
       openers.forEach((opener) => opener.addEventListener("click", open));
-      modal.querySelector("[data-close-qr]")?.addEventListener("click", close);
       modal.addEventListener("click", (event) => {
         if (event.target === modal) close();
       });
