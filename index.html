@@ -163,7 +163,7 @@
       width: 1em;
       color: rgba(235, 255, 240, 0.82);
       font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 14px;
+      font-size: var(--size, 14px);
       font-weight: 900;
       line-height: 0.95;
       writing-mode: vertical-rl;
@@ -189,7 +189,6 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      border-bottom: 1px solid var(--line);
       background: rgba(2, 6, 4, 0.82);
       backdrop-filter: blur(18px);
     }
@@ -503,8 +502,8 @@
       right: 24px;
       top: 22px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      align-items: end;
+      justify-content: flex-start;
       gap: 14px;
       padding: 14px 16px;
       border: 1px solid rgba(57, 255, 136, 0.22);
@@ -518,6 +517,16 @@
     .scan-card strong {
       color: var(--green);
       font-size: 14px;
+      margin-left: auto;
+      margin-right: 0;
+      line-height: 1;
+    }
+
+    .scan-status {
+      display: inline-flex;
+      align-items: end;
+      gap: 10px;
+      margin-left: auto;
     }
 
     .signal-bars {
@@ -525,6 +534,7 @@
       align-items: end;
       gap: 4px;
       height: 24px;
+      padding-bottom: 1px;
     }
 
     .signal-bars span {
@@ -678,8 +688,7 @@
     }
 
     section {
-      padding: 84px 0;
-      border-top: 1px solid rgba(57, 255, 136, 0.12);
+      padding: 42px 0;
     }
 
     .section-head {
@@ -836,7 +845,7 @@
     }
 
     .cta {
-      padding: 76px 0 96px;
+      padding: 38px 0 48px;
     }
 
     .cta-line {
@@ -844,8 +853,7 @@
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 28px;
-      padding-top: 34px;
-      border-top: 1px solid rgba(57, 255, 136, 0.34);
+      padding-top: 17px;
     }
 
     .cta-line p {
@@ -953,7 +961,7 @@
       }
 
       section {
-        padding: 58px 0;
+        padding: 30px 0;
       }
 
       .card-inner {
@@ -991,7 +999,11 @@
       }
 
       .matrix-stream {
-        font-size: 12px;
+        font-size: var(--size, 8px);
+      }
+
+      .matrix-bg {
+        opacity: 0.5;
       }
     }
   </style>
@@ -1108,11 +1120,13 @@
         <aside class="cyber-visual" aria-label="NetX 网络节点矩阵">
           <div class="scan-card">
             <span>NETX / 安全接入拓扑</span>
-            <strong>在线</strong>
-            <span class="signal-bars" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
+            <span class="scan-status">
+              <strong>在线</strong>
+              <span class="signal-bars" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
             </span>
           </div>
           <span class="beam"></span>
@@ -1251,24 +1265,27 @@
         return value;
       };
 
-      for (let i = 0; i < 58; i += 1) {
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const columnCount = isMobile ? 3 : 58;
+
+      for (let i = 0; i < columnCount; i += 1) {
         const span = document.createElement("span");
-        const baseLeft = (i / 57) * 99;
-        const jitter = ((i * 17) % 9 - 4) * 0.32;
+        const baseLeft = isMobile ? 16 + (i / (columnCount - 1)) * 68 : (i / (columnCount - 1)) * 99;
+        const jitter = isMobile ? 0 : ((i * 17) % 9 - 4) * 0.32;
         const left = Math.max(0, Math.min(99, baseLeft + jitter));
-        const len = 24 + ((i * 23) % 118);
+        const len = isMobile ? 18 + ((i * 17) % 36) : 24 + ((i * 23) % 118);
         const fall = i % 4 === 0 ? 56 + ((i * 11) % 24) : i % 5 === 0 ? 74 + ((i * 7) % 22) : 112;
         const speed = 8.8 + ((i * 7) % 48) / 10;
         const delay = -1 * ((i * 1.91) % speed);
-        span.className = i % 8 === 0 ? "matrix-flash" : "matrix-stream";
+        span.className = isMobile ? "matrix-stream" : i % 8 === 0 ? "matrix-flash" : "matrix-stream";
         span.textContent = makeRain(len, i);
         span.style.left = `${left.toFixed(2)}%`;
         span.style.setProperty("--speed", `${speed}s`);
         span.style.setProperty("--delay", `${delay.toFixed(2)}s`);
         span.style.setProperty("--length", `${Math.min(138, 30 + len * 0.72)}vh`);
         span.style.setProperty("--fall", `${fall}vh`);
-        span.style.setProperty("--size", `${12 + (i % 4)}px`);
-        span.style.setProperty("--alpha", `${(0.48 + ((i * 13) % 42) / 100).toFixed(2)}`);
+        span.style.setProperty("--size", `${isMobile ? 8 : 12 + (i % 4)}px`);
+        span.style.setProperty("--alpha", `${(isMobile ? 0.32 + ((i * 13) % 18) / 100 : 0.48 + ((i * 13) % 42) / 100).toFixed(2)}`);
         span.style.setProperty("--flicker", `${(1.45 + (i % 7) * 0.22).toFixed(2)}s`);
         matrix.appendChild(span);
       }
