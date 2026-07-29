@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NetX 企业办公网络解决方案</title>
+  <meta name="description" content="NetX 为个人、小型团队及企业用户提供共享节点、独享节点、软硬件一体化三种办公网络解决方案。">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050807;
+      --bg-2: #07110d;
+      --panel: rgba(8, 22, 17, 0.82);
+      --panel-strong: rgba(10, 32, 23, 0.95);
+      --text: #e6fff2;
+      --muted: #87b99c;
+      --dim: #507761;
+      --line: rgba(80, 255, 155, 0.22);
+      --green: #39ff88;
+      --green-2: #00d9ff;
+      --amber: #ffcc66;
+      --danger: #ff5f7a;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(57, 255, 136, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57, 255, 136, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at 20% 10%, rgba(0, 217, 255, 0.15), transparent 32rem),
+        radial-gradient(circle at 85% 18%, rgba(57, 255, 136, 0.12), transparent 28rem),
+        linear-gradient(180deg, var(--bg), #020403 74%);
+      background-size: 42px 42px, 42px 42px, auto, auto, auto;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.035) 0,
+        rgba(255, 255, 255, 0.035) 1px,
+        transparent 1px,
+        transparent 5px
+      );
+      mix-blend-mode: overlay;
+      opacity: 0.35;
+    }
+
+    .matrix-bg {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0.86;
+      background: linear-gradient(90deg, rgba(57, 255, 136, 0.04), transparent 22%, rgba(0, 217, 255, 0.035), transparent 68%);
+      mask-image: linear-gradient(to bottom, transparent, #000 5%, #000 94%, transparent);
+    }
+
+    .matrix-bg::before,
+    .matrix-bg::after {
+      content: "";
+      position: absolute;
+      inset: -20% 0;
+      pointer-events: none;
+    }
+
+    .matrix-bg::before {
+      background:
+        linear-gradient(90deg, transparent 0 8%, rgba(57, 255, 136, 0.18) 8.4%, transparent 9.4%),
+        linear-gradient(90deg, transparent 0 31%, rgba(0, 217, 255, 0.14) 31.3%, transparent 32.2%),
+        linear-gradient(90deg, transparent 0 58%, rgba(57, 255, 136, 0.16) 58.4%, transparent 59.2%),
+        linear-gradient(90deg, transparent 0 86%, rgba(230, 255, 242, 0.12) 86.2%, transparent 87%);
+      filter: blur(10px);
+      animation: rainGlow 6s ease-in-out infinite alternate;
+    }
+
+    .matrix-bg::after {
+      background:
+        repeating-linear-gradient(90deg, transparent 0 18px, rgba(57, 255, 136, 0.05) 18px 19px, transparent 19px 44px),
+        repeating-linear-gradient(to bottom, transparent 0 54px, rgba(57, 255, 136, 0.08) 54px 55px, transparent 55px 92px);
+      mix-blend-mode: screen;
+      opacity: 0.72;
+      animation: matrixPulse 3.8s ease-in-out infinite;
+    }
+
+    .matrix-stream {
+      position: absolute;
+      top: -160%;
+      width: 1em;
+      color: rgba(57, 255, 136, 0.42);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.18;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      text-shadow: 0 0 10px rgba(57, 255, 136, 0.72), 0 0 26px rgba(57, 255, 136, 0.28);
+      animation: codeRain var(--speed) linear infinite;
+      animation-delay: var(--delay);
+    }
+
+    .matrix-stream::first-letter {
+      color: #effff6;
+      text-shadow: 0 0 12px #effff6, 0 0 28px var(--green), 0 0 48px var(--green-2);
+    }
+
+    .matrix-stream:nth-child(3n) {
+      color: rgba(0, 217, 255, 0.34);
+      font-size: 14px;
+    }
+
+    .matrix-stream:nth-child(4n) {
+      opacity: 0.5;
+    }
+
+    .matrix-stream:nth-child(5n) {
+      color: rgba(230, 255, 242, 0.55);
+      text-shadow: 0 0 16px rgba(57, 255, 136, 0.86), 0 0 34px rgba(0, 217, 255, 0.3);
+    }
+
+    .matrix-stream:nth-child(7n) {
+      filter: blur(0.5px);
+      opacity: 0.68;
+    }
+
+    .matrix-stream:nth-child(8n) {
+      font-size: 20px;
+      color: rgba(57, 255, 136, 0.58);
+    }
+
+    .matrix-stream:nth-child(9n) {
+      opacity: 0.4;
+    }
+
+    .matrix-flash {
+      position: absolute;
+      top: -55%;
+      width: 1em;
+      color: rgba(239, 255, 246, 0.72);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1.08;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      text-shadow: 0 0 10px #effff6, 0 0 24px var(--green), 0 0 54px var(--green-2);
+      animation: codeRainFlash var(--speed) cubic-bezier(0.15, 0.8, 0.35, 1) infinite;
+      animation-delay: var(--delay);
+      opacity: 0.86;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(2, 6, 4, 0.82);
+      backdrop-filter: blur(18px);
+    }
+
+    main,
+    header,
+    footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(57, 255, 136, 0.5);
+      border-radius: var(--radius);
+      color: var(--green);
+      background: linear-gradient(145deg, rgba(57, 255, 136, 0.14), rgba(0, 217, 255, 0.08));
+      box-shadow: 0 0 30px rgba(57, 255, 136, 0.18);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .nav-links a {
+      position: relative;
+      padding: 10px 0;
+    }
+
+    .nav-links a:hover {
+      color: var(--green);
+      text-shadow: 0 0 18px rgba(57, 255, 136, 0.65);
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 3px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      opacity: 0;
+      transform: scaleX(0.5);
+      transition: 180ms ease;
+    }
+
+    .nav-links a:hover::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .hero {
+      position: relative;
+      min-height: calc(100vh - 68px);
+      display: grid;
+      align-items: center;
+      padding: 72px 0 56px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      color: var(--green);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .kicker::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px var(--green);
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 0;
+      font-size: clamp(44px, 7vw, 88px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .hero-lead {
+      max-width: 680px;
+      margin: 24px 0 0;
+      color: #b8ddc7;
+      font-size: clamp(17px, 2vw, 21px);
+      line-height: 1.75;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid rgba(57, 255, 136, 0.58);
+      border-radius: var(--radius);
+      color: #031008;
+      background: var(--green);
+      font-weight: 800;
+      box-shadow: 0 0 34px rgba(57, 255, 136, 0.2);
+    }
+
+    .btn.secondary {
+      color: var(--green);
+      background: rgba(57, 255, 136, 0.06);
+    }
+
+    .cyber-visual {
+      position: relative;
+      overflow: hidden;
+      min-height: 620px;
+      border: 1px solid rgba(57, 255, 136, 0.34);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 50% 46%, rgba(57, 255, 136, 0.2), transparent 19%),
+        radial-gradient(circle at 50% 50%, rgba(0, 217, 255, 0.13), transparent 36%),
+        linear-gradient(135deg, rgba(57, 255, 136, 0.08), rgba(0, 0, 0, 0.18) 42%, rgba(0, 217, 255, 0.08)),
+        rgba(2, 8, 5, 0.78);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+
+    .cyber-visual::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(57, 255, 136, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57, 255, 136, 0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(circle at center, #000 42%, transparent 76%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .cyber-visual::after {
+      content: "";
+      position: absolute;
+      inset: -45%;
+      z-index: -1;
+      background: conic-gradient(from 90deg, transparent, rgba(57, 255, 136, 0.24), transparent 28%, rgba(0, 217, 255, 0.18), transparent 62%);
+      animation: rotateField 16s linear infinite;
+      opacity: 0.75;
+    }
+
+    .network-core {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 170px;
+      height: 170px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(57, 255, 136, 0.8);
+      background:
+        radial-gradient(circle, rgba(230, 255, 242, 0.94) 0 5px, transparent 6px),
+        radial-gradient(circle, rgba(57, 255, 136, 0.28), transparent 60%);
+      box-shadow:
+        0 0 38px rgba(57, 255, 136, 0.62),
+        inset 0 0 34px rgba(57, 255, 136, 0.24);
+    }
+
+    .network-core::before,
+    .network-core::after {
+      content: "";
+      position: absolute;
+      inset: -44px;
+      border-radius: 50%;
+      border: 1px dashed rgba(57, 255, 136, 0.48);
+      animation: rotateField 10s linear infinite;
+    }
+
+    .network-core::after {
+      inset: -92px;
+      border-color: rgba(0, 217, 255, 0.35);
+      animation-duration: 18s;
+      animation-direction: reverse;
+    }
+
+    .node {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 118px;
+      min-height: 62px;
+      padding: 12px 10px;
+      border: 1px solid rgba(57, 255, 136, 0.36);
+      border-radius: var(--radius);
+      color: #d9ffe8;
+      background: rgba(1, 12, 7, 0.82);
+      box-shadow: 0 0 28px rgba(57, 255, 136, 0.13);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .node::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-bottom: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .node-a {
+      left: 7%;
+      top: 24%;
+    }
+
+    .node-b {
+      right: 7%;
+      top: 25%;
+    }
+
+    .node-c {
+      left: 7%;
+      bottom: 34%;
+    }
+
+    .node-d {
+      right: 7%;
+      bottom: 34%;
+    }
+
+    .node-e {
+      left: 50%;
+      bottom: 18%;
+      transform: translateX(-50%);
+    }
+
+    .beam {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 92%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(57, 255, 136, 0.42), transparent);
+      transform-origin: left center;
+      opacity: 0.8;
+    }
+
+    .beam:nth-of-type(1) {
+      transform: rotate(22deg) translateX(-50%);
+    }
+
+    .beam:nth-of-type(2) {
+      transform: rotate(-24deg) translateX(-50%);
+    }
+
+    .beam:nth-of-type(3) {
+      transform: rotate(90deg) translateX(-50%);
+      background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.36), transparent);
+    }
+
+    .scan-card {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      border: 1px solid rgba(57, 255, 136, 0.22);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, 0.36);
+      color: var(--muted);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .scan-card strong {
+      color: var(--green);
+      font-size: 14px;
+    }
+
+    .signal-bars {
+      display: flex;
+      align-items: end;
+      gap: 4px;
+      height: 24px;
+    }
+
+    .signal-bars span {
+      width: 5px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(57, 255, 136, 0.7);
+    }
+
+    .signal-bars span:nth-child(1) {
+      height: 8px;
+    }
+
+    .signal-bars span:nth-child(2) {
+      height: 14px;
+    }
+
+    .signal-bars span:nth-child(3) {
+      height: 20px;
+    }
+
+    .status-strip {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .status-strip span {
+      padding: 11px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      color: #c8f8dc;
+      background: rgba(0, 0, 0, 0.28);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 9px;
+      height: 1.2em;
+      margin-left: 4px;
+      vertical-align: -0.2em;
+      background: var(--green);
+      animation: blink 1s steps(2, start) infinite;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @keyframes rotateField {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes codeRain {
+      from {
+        transform: translateY(-10vh);
+      }
+
+      to {
+        transform: translateY(300vh);
+      }
+    }
+
+    @keyframes codeRainFast {
+      from {
+        transform: translateY(-25vh) scaleY(1.06);
+      }
+
+      to {
+        transform: translateY(330vh) scaleY(1.06);
+      }
+    }
+
+    @keyframes codeRainSlow {
+      from {
+        transform: translateY(-40vh);
+      }
+
+      to {
+        transform: translateY(260vh);
+      }
+    }
+
+    @keyframes rainGlow {
+      from {
+        opacity: 0.32;
+        transform: translateY(-4%);
+      }
+
+      to {
+        opacity: 0.78;
+        transform: translateY(4%);
+      }
+    }
+
+    @keyframes matrixPulse {
+      0%,
+      100% {
+        opacity: 0.42;
+      }
+
+      50% {
+        opacity: 0.9;
+      }
+    }
+
+    @keyframes codeRainFlash {
+      0% {
+        transform: translateY(-20vh);
+        opacity: 0;
+      }
+
+      8% {
+        opacity: 0.98;
+      }
+
+      70% {
+        opacity: 0.82;
+      }
+
+      100% {
+        transform: translateY(230vh);
+        opacity: 0;
+      }
+    }
+
+    section {
+      padding: 84px 0;
+      border-top: 1px solid rgba(57, 255, 136, 0.12);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .section-note {
+      max-width: 460px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      border-top: 1px solid rgba(57, 255, 136, 0.26);
+    }
+
+    .card {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      position: relative;
+      overflow: visible;
+      border: 0;
+      border-bottom: 1px solid rgba(57, 255, 136, 0.2);
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: -1px;
+      bottom: -1px;
+      width: 2px;
+      border-top: 0;
+      background: linear-gradient(180deg, transparent, rgba(57, 255, 136, 0.7), transparent);
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateX(6px);
+      border-color: rgba(57, 255, 136, 0.52);
+      box-shadow: none;
+    }
+
+    .card-inner {
+      position: relative;
+      padding: 38px 0 38px 34px;
+    }
+
+    .card-index {
+      position: relative;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      padding-left: 0;
+      border-right: 1px solid rgba(57, 255, 136, 0.18);
+      background: transparent;
+      color: var(--green);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-weight: 900;
+    }
+
+    .card-index strong {
+      position: relative;
+      width: 78px;
+      height: 78px;
+      font-size: 0;
+      border: 1px solid rgba(57, 255, 136, 0.48);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(230, 255, 242, 0.96) 0 4px, transparent 5px),
+        radial-gradient(circle, rgba(57, 255, 136, 0.22), transparent 62%);
+      box-shadow: 0 0 32px rgba(57, 255, 136, 0.38), inset 0 0 28px rgba(57, 255, 136, 0.18);
+    }
+
+    .card-index strong::before,
+    .card-index strong::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      border: 1px dashed rgba(57, 255, 136, 0.52);
+      animation: rotateField 10s linear infinite;
+    }
+
+    .card-index strong::after {
+      inset: -12px;
+      border-color: rgba(0, 217, 255, 0.32);
+      animation-duration: 16s;
+      animation-direction: reverse;
+    }
+
+    .card-index::after {
+      content: "";
+      position: absolute;
+      right: -44px;
+      width: 88px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      box-shadow: 0 0 16px rgba(57, 255, 136, 0.65);
+    }
+
+    .tag {
+      display: none;
+      margin-bottom: 18px;
+      padding: 5px 9px;
+      border: 1px solid rgba(57, 255, 136, 0.28);
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(57, 255, 136, 0.06);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+
+    h3 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .card p {
+      margin: 0 0 18px;
+      color: #b6dac4;
+      line-height: 1.7;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      position: relative;
+      padding-left: 18px;
+      color: #d8f7e4;
+      line-height: 1.55;
+    }
+
+    .list li::before {
+      content: ">";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    .price-zone {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .price-box {
+      padding: 16px;
+      border: 1px solid rgba(57, 255, 136, 0.18);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .price-box h4 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .price {
+      color: var(--green);
+      font-size: 24px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0;
+      margin: 12px 0 0;
+      list-style: none;
+    }
+
+    .meta li {
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      color: #add1bc;
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 13px;
+    }
+
+    .cta {
+      padding: 76px 0 96px;
+    }
+
+    .cta-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding-top: 34px;
+      border-top: 1px solid rgba(57, 255, 136, 0.34);
+    }
+
+    .cta-line p {
+      max-width: 640px;
+      margin: 16px 0 0;
+      color: #bde4cb;
+      line-height: 1.8;
+    }
+
+    footer {
+      padding: 28px 0;
+      border-top: 1px solid rgba(57, 255, 136, 0.14);
+      color: var(--dim);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        grid-template-columns: 1fr;
+      }
+
+      .card-index {
+        min-height: 96px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(57, 255, 136, 0.18);
+      }
+
+      .price-zone {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-line {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-note {
+        margin-top: 14px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1180px);
+      }
+
+      .nav {
+        min-height: 60px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: 52px 0 40px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      section {
+        padding: 58px 0;
+      }
+
+      .card-inner {
+        padding: 20px;
+      }
+
+      .cyber-visual {
+        min-height: 540px;
+      }
+
+      .status-strip {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .status-strip span {
+        padding: 9px 6px;
+        font-size: 10px;
+      }
+
+      .node {
+        width: 104px;
+        min-height: 58px;
+        font-size: 10px;
+      }
+
+      .price-box h4 {
+        display: block;
+      }
+
+      .price {
+        display: block;
+        margin-top: 8px;
+      }
+
+      .matrix-stream {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="matrix-bg" aria-hidden="true">
+    <span class="matrix-stream" style="left: 0%; --speed: 18s; --delay: -2s;">010101NETX010SECURE</span>
+    <span class="matrix-stream" style="left: 2%; --speed: 20s; --delay: -14s;">101001ACCESS001NODE</span>
+    <span class="matrix-stream" style="left: 4%; --speed: 17s; --delay: -8s;">NETX001101ROUTELOCK</span>
+    <span class="matrix-stream" style="left: 6%; --speed: 22s; --delay: -19s;">0110PRIVATE010AUTH</span>
+    <span class="matrix-stream" style="left: 8%; --speed: 19s; --delay: -5s;">SECUREFLOW101001</span>
+    <span class="matrix-stream" style="left: 10%; --speed: 21s; --delay: -16s;">010VPN010GATEWAY</span>
+    <span class="matrix-stream" style="left: 12%; --speed: 18s; --delay: -11s;">CIPHER001NODEONLINE</span>
+    <span class="matrix-stream" style="left: 14%; --speed: 23s; --delay: -3s;">1010ZERO010TRUST</span>
+    <span class="matrix-stream" style="left: 16%; --speed: 20s; --delay: -18s;">ACCESSMAP101001</span>
+    <span class="matrix-stream" style="left: 18%; --speed: 17s; --delay: -6s;">SERVERNODE01101</span>
+    <span class="matrix-stream" style="left: 20%; --speed: 22s; --delay: -13s;">HYBRIDDEPLOY010</span>
+    <span class="matrix-stream" style="left: 22%; --speed: 19s; --delay: -1s;">OFFICENETWORK101</span>
+    <span class="matrix-stream" style="left: 24%; --speed: 21s; --delay: -20s;">ROUTELOCK00101</span>
+    <span class="matrix-stream" style="left: 26%; --speed: 18s; --delay: -9s;">PING160MS01001</span>
+    <span class="matrix-stream" style="left: 28%; --speed: 23s; --delay: -15s;">ENTERPRISE00110</span>
+    <span class="matrix-stream" style="left: 30%; --speed: 20s; --delay: -4s;">FIREWALL010NETX</span>
+    <span class="matrix-stream" style="left: 32%; --speed: 17s; --delay: -12s;">101001AUTHLOCKNETX</span>
+    <span class="matrix-stream" style="left: 34%; --speed: 22s; --delay: -7s;">010VPN010SECURE</span>
+    <span class="matrix-stream" style="left: 36%; --speed: 19s; --delay: -17s;">ACCESS001NODE</span>
+    <span class="matrix-stream" style="left: 38%; --speed: 21s; --delay: -10s;">0110ROUTEGUARD</span>
+    <span class="matrix-stream" style="left: 40%; --speed: 18s; --delay: -21s;">NETXFLOW10010</span>
+    <span class="matrix-stream" style="left: 42%; --speed: 23s; --delay: -5s;">001PRIVATEWAN</span>
+    <span class="matrix-stream" style="left: 44%; --speed: 20s; --delay: -14s;">CIPHER010101</span>
+    <span class="matrix-stream" style="left: 46%; --speed: 17s; --delay: -2s;">1001GATEWAY</span>
+    <span class="matrix-stream" style="left: 48%; --speed: 22s; --delay: -18s;">OFFICE010SYNC</span>
+    <span class="matrix-stream" style="left: 50%; --speed: 19s; --delay: -8s;">1010UPLINK001</span>
+    <span class="matrix-stream" style="left: 52%; --speed: 21s; --delay: -16s;">MONITOR00101</span>
+    <span class="matrix-stream" style="left: 54%; --speed: 18s; --delay: -6s;">LATENCY160NETX</span>
+    <span class="matrix-stream" style="left: 56%; --speed: 23s; --delay: -22s;">CONTROL010ACCESS</span>
+    <span class="matrix-stream" style="left: 58%; --speed: 20s; --delay: -11s;">SHELL001NET</span>
+    <span class="matrix-stream" style="left: 60%; --speed: 17s; --delay: -3s;">101DARKROUTE</span>
+    <span class="matrix-stream" style="left: 62%; --speed: 22s; --delay: -19s;">SAFEACCESS01</span>
+    <span class="matrix-stream" style="left: 64%; --speed: 19s; --delay: -9s;">010101NETXSEC</span>
+    <span class="matrix-stream" style="left: 66%; --speed: 21s; --delay: -15s;">VPN001101NODE</span>
+    <span class="matrix-stream" style="left: 68%; --speed: 18s; --delay: -1s;">AUTH010LOCK</span>
+    <span class="matrix-stream" style="left: 70%; --speed: 23s; --delay: -20s;">DATA010TUNNEL</span>
+    <span class="matrix-stream" style="left: 72%; --speed: 20s; --delay: -7s;">0101CN2ROUTE</span>
+    <span class="matrix-stream" style="left: 74%; --speed: 17s; --delay: -13s;">NEXUS001FLOW</span>
+    <span class="matrix-stream" style="left: 76%; --speed: 22s; --delay: -4s;">SERVER010SYNC</span>
+    <span class="matrix-stream" style="left: 78%; --speed: 19s; --delay: -18s;">PACKET00101</span>
+    <span class="matrix-stream" style="left: 80%; --speed: 21s; --delay: -10s;">ROUTE010NET</span>
+    <span class="matrix-stream" style="left: 82%; --speed: 18s; --delay: -16s;">SECOPS10100</span>
+    <span class="matrix-stream" style="left: 84%; --speed: 23s; --delay: -6s;">UPLINK01010</span>
+    <span class="matrix-stream" style="left: 86%; --speed: 20s; --delay: -21s;">GATE010TRUST</span>
+    <span class="matrix-stream" style="left: 88%; --speed: 17s; --delay: -11s;">CRYPT001NETX</span>
+    <span class="matrix-stream" style="left: 90%; --speed: 22s; --delay: -2s;">ACCESS010WAN</span>
+    <span class="matrix-stream" style="left: 92%; --speed: 19s; --delay: -17s;">LOCK101NODE</span>
+    <span class="matrix-stream" style="left: 94%; --speed: 21s; --delay: -8s;">NETX010CTRL</span>
+    <span class="matrix-stream" style="left: 96%; --speed: 18s; --delay: -14s;">FIREWALL010</span>
+    <span class="matrix-stream" style="left: 98%; --speed: 23s; --delay: -5s;">SAFE001ACCESS</span>
+    <span class="matrix-flash" style="left: 1%; --speed: 9s; --delay: -1s;">NETX</span>
+    <span class="matrix-flash" style="left: 9%; --speed: 9s; --delay: -5s;">0101</span>
+    <span class="matrix-flash" style="left: 17%; --speed: 9s; --delay: -8s;">AUTH</span>
+    <span class="matrix-flash" style="left: 25%; --speed: 9s; --delay: -3s;">NODE</span>
+    <span class="matrix-flash" style="left: 33%; --speed: 9s; --delay: -7s;">LOCK</span>
+    <span class="matrix-flash" style="left: 41%; --speed: 9s; --delay: -2s;">SYNC</span>
+    <span class="matrix-flash" style="left: 49%; --speed: 9s; --delay: -6s;">ROUTE</span>
+    <span class="matrix-flash" style="left: 57%; --speed: 9s; --delay: -9s;">CN2</span>
+    <span class="matrix-flash" style="left: 65%; --speed: 9s; --delay: -4s;">VPN</span>
+    <span class="matrix-flash" style="left: 73%; --speed: 9s; --delay: -8s;">CTRL</span>
+    <span class="matrix-flash" style="left: 81%; --speed: 9s; --delay: -3s;">DATA</span>
+    <span class="matrix-flash" style="left: 89%; --speed: 9s; --delay: -7s;">ACCESS</span>
+    <span class="matrix-flash" style="left: 97%; --speed: 9s; --delay: -5s;">1010</span>
+  </div>
+  <header class="topbar">
+    <nav class="shell nav" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="NetX 首页">
+        
+        <span>NetX</span>
+      </a>
+      <div class="nav-links">
+        <a href="#solutions">方案</a>
+        <a href="#contact">联系</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="kicker">NETX_SECURE_NETWORK // ONLINE</div>
+          <h1>企业办公网络解决方案</h1>
+          <p class="hero-lead">
+            面向个人、小型团队及企业用户，提供共享节点、独享节点、软硬件一体化三种方案，灵活匹配不同场景，满足从日常办公到企业级网络需求的访问体验。
+          </p>
+          <div class="actions">
+            <a class="btn" href="#solutions">查看方案</a>
+            <a class="btn secondary" href="#contact">联系我们</a>
+          </div>
+        </div>
+
+        <aside class="cyber-visual" aria-label="NetX 网络节点矩阵">
+          <div class="scan-card">
+            <span>NETX / SECURE ACCESS MAP</span>
+            <strong>ONLINE</strong>
+            <span class="signal-bars" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </div>
+          <span class="beam"></span>
+          <span class="beam"></span>
+          <span class="beam"></span>
+          <div class="network-core" aria-hidden="true"></div>
+          <span class="node node-a">SHARED<br>ACCESS</span>
+          <span class="node node-b">PRIVATE<br>NODE</span>
+          <span class="node node-c">CN2<br>ROUTE</span>
+          <span class="node node-d">SECURE<br>TUNNEL</span>
+          <span class="node node-e">HYBRID<br>DEPLOY</span>
+          <div class="status-strip">
+            <span>LOW LATENCY</span>
+            <span>ENCRYPTED</span>
+            <span>ENTERPRISE READY</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="solutions">
+      <div class="shell">
+        <div class="section-head">
+          <h2>三大企业网络方案</h2>
+          <p class="section-note">从快速接入到定制部署，按团队规模、稳定性要求和管理复杂度选择合适方案。</p>
+        </div>
+
+        <div class="cards">
+          <article class="card">
+            <div class="card-index">
+              <strong aria-hidden="true"></strong>
+            </div>
+            <div class="card-inner">
+              <h3>轻量办公，共享接入</h3>
+              <p>快速接入，满足日常办公与基础网络需求。共享优质网络节点资源，无需部署，快速开通使用。</p>
+              <ul class="list">
+                <li>快速接入</li>
+                <li>安全通信</li>
+                <li>适合个人用户、小型团队、轻量办公需求</li>
+              </ul>
+              <div class="price-zone">
+                <div class="price-box">
+                  <h4>极速版 <span class="price">¥500 / 年</span></h4>
+                  <ul class="meta">
+                    <li>1000G / 年</li>
+                    <li>CN2 精品线路</li>
+                    <li>低至 160ms</li>
+                  </ul>
+                </div>
+                <div class="price-box">
+                  <h4>至尊版 <span class="price">¥800 / 年</span></h4>
+                  <ul class="meta">
+                    <li>1000G / 年</li>
+                    <li>CN2 精品线路</li>
+                    <li>低至 170ms</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-index">
+              <strong aria-hidden="true"></strong>
+            </div>
+            <div class="card-inner">
+              <h3>企业私有，稳定独享</h3>
+              <p>独立部署，为企业提供稳定专属网络环境。提供独立网络节点，私有独占，保障更稳定的网络体验。</p>
+              <ul class="list">
+                <li>独享服务器节点</li>
+                <li>专属网络资源</li>
+                <li>多设备接入</li>
+                <li>企业内部资源安全访问</li>
+              </ul>
+              <div class="price-zone">
+                <div class="price-box">
+                  <h4>企业私有部署 <span class="price">¥3000起 / 年</span></h4>
+                  <ul class="meta">
+                    <li>节点数量</li>
+                    <li>服务器配置</li>
+                    <li>带宽需求</li>
+                    <li>企业规模</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-index">
+              <strong aria-hidden="true"></strong>
+            </div>
+            <div class="card-inner">
+              <h3>企业专属，软硬一体</h3>
+              <p>定制部署，打造企业级网络环境。结合 NetX 网络系统与企业级硬件设备，为企业打造专属网络解决方案</p>
+              <ul class="list">
+                <li>软硬件结合，打造企业专属网络</li>
+                <li>企业级设备部署，保障稳定连接</li>
+                <li>统一管理，灵活控制访问权限</li>
+                <li>提供定制化组网服务</li>
+              </ul>
+              <div class="price-zone">
+                <div class="price-box">
+                  <h4>企业定制方案 <span class="price">¥10000起 / 年</span></h4>
+                  <ul class="meta">
+                    <li>硬件配置</li>
+                    <li>网络规模</li>
+                    <li>定制需求</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="cta">
+      <div class="shell">
+        <div class="cta-line">
+          <div>
+            <h2>开始搭建企业专属网络</h2>
+            <p>根据团队规模、访问场景、带宽需求与管理要求，选择适合的 NetX 办公网络方案。</p>
+          </div>
+          <a class="btn" href="mailto:contact@example.com">联系我们</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">© NetX Enterprise Network Solution</div>
+  </footer>
+</body>
+</html>
