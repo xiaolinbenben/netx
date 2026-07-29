@@ -73,9 +73,11 @@
       z-index: 0;
       pointer-events: none;
       overflow: hidden;
-      opacity: 0.86;
-      background: linear-gradient(90deg, rgba(57, 255, 136, 0.04), transparent 22%, rgba(0, 217, 255, 0.035), transparent 68%);
-      mask-image: linear-gradient(to bottom, transparent, #000 5%, #000 94%, transparent);
+      opacity: 1;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(57, 255, 136, 0.08), transparent 38%),
+        linear-gradient(90deg, rgba(57, 255, 136, 0.035), transparent 18%, rgba(0, 0, 0, 0.18), transparent 70%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 94%, transparent);
     }
 
     .matrix-bg::before,
@@ -88,18 +90,16 @@
 
     .matrix-bg::before {
       background:
-        linear-gradient(90deg, transparent 0 8%, rgba(57, 255, 136, 0.18) 8.4%, transparent 9.4%),
-        linear-gradient(90deg, transparent 0 31%, rgba(0, 217, 255, 0.14) 31.3%, transparent 32.2%),
-        linear-gradient(90deg, transparent 0 58%, rgba(57, 255, 136, 0.16) 58.4%, transparent 59.2%),
-        linear-gradient(90deg, transparent 0 86%, rgba(230, 255, 242, 0.12) 86.2%, transparent 87%);
-      filter: blur(10px);
-      animation: rainGlow 6s ease-in-out infinite alternate;
+        repeating-linear-gradient(90deg, transparent 0 7px, rgba(57, 255, 136, 0.12) 7px 8px, transparent 8px 17px),
+        linear-gradient(to bottom, rgba(57, 255, 136, 0.16), transparent 42%, rgba(57, 255, 136, 0.08), transparent);
+      filter: blur(4px);
+      animation: rainGlow 5.4s ease-in-out infinite alternate;
     }
 
     .matrix-bg::after {
       background:
-        repeating-linear-gradient(90deg, transparent 0 18px, rgba(57, 255, 136, 0.05) 18px 19px, transparent 19px 44px),
-        repeating-linear-gradient(to bottom, transparent 0 54px, rgba(57, 255, 136, 0.08) 54px 55px, transparent 55px 92px);
+        repeating-linear-gradient(90deg, transparent 0 7px, rgba(57, 255, 136, 0.035) 7px 8px, transparent 8px 18px),
+        repeating-linear-gradient(to bottom, transparent 0 32px, rgba(57, 255, 136, 0.04) 32px 33px, transparent 33px 70px);
       mix-blend-mode: screen;
       opacity: 0.72;
       animation: matrixPulse 3.8s ease-in-out infinite;
@@ -107,28 +107,32 @@
 
     .matrix-stream {
       position: absolute;
-      top: -160%;
-      width: 1em;
-      color: rgba(57, 255, 136, 0.42);
+      top: calc(-1 * var(--length, 96vh));
+      width: 1ch;
+      min-height: var(--length, 96vh);
+      color: rgba(50, 255, 112, 0.58);
       font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 17px;
-      font-weight: 800;
-      line-height: 1.18;
+      font-size: var(--size, 14px);
+      font-weight: 700;
+      line-height: 0.94;
       writing-mode: vertical-rl;
       text-orientation: upright;
-      text-shadow: 0 0 10px rgba(57, 255, 136, 0.72), 0 0 26px rgba(57, 255, 136, 0.28);
-      animation: codeRain var(--speed) linear infinite;
+      letter-spacing: 0;
+      text-shadow: 0 0 7px rgba(57, 255, 136, 0.76), 0 0 18px rgba(57, 255, 136, 0.38);
+      opacity: var(--alpha, 0.72);
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.9) 18%, rgba(0, 0, 0, 0.52) 54%, rgba(0, 0, 0, 0.18) 82%, transparent 100%);
+      animation: codeRain var(--speed) linear infinite, glyphFlicker var(--flicker, 3.1s) steps(6, end) infinite;
       animation-delay: var(--delay);
     }
 
     .matrix-stream::first-letter {
-      color: #effff6;
-      text-shadow: 0 0 12px #effff6, 0 0 28px var(--green), 0 0 48px var(--green-2);
+      color: rgba(230, 255, 236, 0.92);
+      text-shadow: 0 0 8px #effff6, 0 0 18px var(--green);
     }
 
     .matrix-stream:nth-child(3n) {
-      color: rgba(0, 217, 255, 0.34);
-      font-size: 14px;
+      color: rgba(47, 210, 88, 0.42);
+      font-size: var(--size, 13px);
     }
 
     .matrix-stream:nth-child(4n) {
@@ -136,8 +140,8 @@
     }
 
     .matrix-stream:nth-child(5n) {
-      color: rgba(230, 255, 242, 0.55);
-      text-shadow: 0 0 16px rgba(57, 255, 136, 0.86), 0 0 34px rgba(0, 217, 255, 0.3);
+      color: rgba(120, 255, 158, 0.72);
+      text-shadow: 0 0 9px rgba(57, 255, 136, 0.86), 0 0 22px rgba(57, 255, 136, 0.42);
     }
 
     .matrix-stream:nth-child(7n) {
@@ -146,8 +150,7 @@
     }
 
     .matrix-stream:nth-child(8n) {
-      font-size: 20px;
-      color: rgba(57, 255, 136, 0.58);
+      color: rgba(230, 255, 238, 0.72);
     }
 
     .matrix-stream:nth-child(9n) {
@@ -156,17 +159,18 @@
 
     .matrix-flash {
       position: absolute;
-      top: -55%;
+      top: calc(-1 * var(--length, 68vh));
       width: 1em;
-      color: rgba(239, 255, 246, 0.72);
+      color: rgba(235, 255, 240, 0.82);
       font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 19px;
+      font-size: 14px;
       font-weight: 900;
-      line-height: 1.08;
+      line-height: 0.95;
       writing-mode: vertical-rl;
       text-orientation: upright;
-      text-shadow: 0 0 10px #effff6, 0 0 24px var(--green), 0 0 54px var(--green-2);
-      animation: codeRainFlash var(--speed) cubic-bezier(0.15, 0.8, 0.35, 1) infinite;
+      text-shadow: 0 0 9px #effff6, 0 0 24px var(--green), 0 0 42px rgba(57, 255, 136, 0.52);
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.82) 28%, rgba(0, 0, 0, 0.28) 72%, transparent 100%);
+      animation: codeRainFlash var(--speed) linear infinite, glyphFlicker 1.9s steps(4, end) infinite;
       animation-delay: var(--delay);
       opacity: 0.86;
     }
@@ -208,24 +212,26 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       font-weight: 800;
       font-size: 22px;
       letter-spacing: 0;
     }
 
     .brand-mark {
-      display: grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      border: 1px solid rgba(57, 255, 136, 0.5);
-      border-radius: var(--radius);
+      width: 34px;
+      height: 34px;
       color: var(--green);
-      background: linear-gradient(145deg, rgba(57, 255, 136, 0.14), rgba(0, 217, 255, 0.08));
-      box-shadow: 0 0 30px rgba(57, 255, 136, 0.18);
-      font-family: "SFMono-Regular", Consolas, monospace;
+      filter: drop-shadow(0 0 12px rgba(57, 255, 136, 0.72)) drop-shadow(0 0 28px rgba(0, 217, 255, 0.2));
+      flex: 0 0 auto;
     }
+
+    .brand-mark svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
 
     .nav-links {
       display: flex;
@@ -416,7 +422,7 @@
       position: absolute;
       display: grid;
       place-items: center;
-      width: 118px;
+      width: 128px;
       min-height: 62px;
       padding: 12px 10px;
       border: 1px solid rgba(57, 255, 136, 0.36);
@@ -425,9 +431,10 @@
       background: rgba(1, 12, 7, 0.82);
       box-shadow: 0 0 28px rgba(57, 255, 136, 0.13);
       font-family: "SFMono-Regular", Consolas, monospace;
-      font-size: 11px;
+      font-size: 13px;
       line-height: 1.25;
       text-align: center;
+      white-space: nowrap;
     }
 
     .node::before {
@@ -584,11 +591,11 @@
 
     @keyframes codeRain {
       from {
-        transform: translateY(-10vh);
+        transform: translateY(-8vh);
       }
 
       to {
-        transform: translateY(300vh);
+        transform: translateY(calc(var(--fall, 112vh) + var(--length, 70vh)));
       }
     }
 
@@ -637,21 +644,36 @@
 
     @keyframes codeRainFlash {
       0% {
-        transform: translateY(-20vh);
+        transform: translateY(-6vh);
         opacity: 0;
       }
 
-      8% {
-        opacity: 0.98;
+      14% {
+        opacity: 0.76;
       }
 
       70% {
-        opacity: 0.82;
+        opacity: 0.42;
       }
 
       100% {
-        transform: translateY(230vh);
+        transform: translateY(calc(var(--fall, 86vh) + var(--length, 42vh)));
         opacity: 0;
+      }
+    }
+
+    @keyframes glyphFlicker {
+      0%,
+      100% {
+        opacity: calc(var(--alpha, 0.55) * 0.55);
+      }
+
+      38% {
+        opacity: var(--alpha, 0.55);
+      }
+
+      62% {
+        opacity: calc(var(--alpha, 0.55) * 0.75);
       }
     }
 
@@ -684,98 +706,36 @@
 
     .cards {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
-      border-top: 1px solid rgba(57, 255, 136, 0.26);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      align-items: stretch;
     }
 
     .card {
-      display: grid;
-      grid-template-columns: 210px minmax(0, 1fr);
+      display: flex;
+      flex-direction: column;
       position: relative;
       overflow: visible;
       border: 0;
-      border-bottom: 1px solid rgba(57, 255, 136, 0.2);
+      border-bottom: 0;
       border-radius: 0;
       background: transparent;
       box-shadow: none;
       transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
     }
 
-    .card::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: -1px;
-      bottom: -1px;
-      width: 2px;
-      border-top: 0;
-      background: linear-gradient(180deg, transparent, rgba(57, 255, 136, 0.7), transparent);
-      pointer-events: none;
-    }
-
     .card:hover {
-      transform: translateX(6px);
+      transform: translateY(-4px);
       border-color: rgba(57, 255, 136, 0.52);
       box-shadow: none;
     }
 
     .card-inner {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
       position: relative;
-      padding: 38px 0 38px 34px;
-    }
-
-    .card-index {
-      position: relative;
-      display: grid;
-      align-items: center;
-      justify-items: center;
-      padding-left: 0;
-      border-right: 1px solid rgba(57, 255, 136, 0.18);
-      background: transparent;
-      color: var(--green);
-      font-family: "SFMono-Regular", Consolas, monospace;
-      font-weight: 900;
-    }
-
-    .card-index strong {
-      position: relative;
-      width: 78px;
-      height: 78px;
-      font-size: 0;
-      border: 1px solid rgba(57, 255, 136, 0.48);
-      border-radius: 50%;
-      background:
-        radial-gradient(circle, rgba(230, 255, 242, 0.96) 0 4px, transparent 5px),
-        radial-gradient(circle, rgba(57, 255, 136, 0.22), transparent 62%);
-      box-shadow: 0 0 32px rgba(57, 255, 136, 0.38), inset 0 0 28px rgba(57, 255, 136, 0.18);
-    }
-
-    .card-index strong::before,
-    .card-index strong::after {
-      content: "";
-      position: absolute;
-      inset: 12px;
-      border-radius: 50%;
-      border: 1px dashed rgba(57, 255, 136, 0.52);
-      animation: rotateField 10s linear infinite;
-    }
-
-    .card-index strong::after {
-      inset: -12px;
-      border-color: rgba(0, 217, 255, 0.32);
-      animation-duration: 16s;
-      animation-direction: reverse;
-    }
-
-    .card-index::after {
-      content: "";
-      position: absolute;
-      right: -44px;
-      width: 88px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--green), transparent);
-      box-shadow: 0 0 16px rgba(57, 255, 136, 0.65);
+      padding: 0;
     }
 
     .tag {
@@ -829,8 +789,10 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 12px;
-      margin-top: 22px;
+      margin-top: auto;
+      padding-top: 22px;
     }
+
 
     .price-box {
       padding: 16px;
@@ -893,6 +855,57 @@
       line-height: 1.8;
     }
 
+    .qr-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(12px);
+    }
+
+    .qr-modal.is-open {
+      display: grid;
+    }
+
+    .qr-panel {
+      width: min(360px, 100%);
+      padding: 22px;
+      border: 1px solid rgba(57, 255, 136, 0.36);
+      border-radius: var(--radius);
+      background: rgba(2, 12, 7, 0.96);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62), 0 0 42px rgba(57, 255, 136, 0.16);
+      text-align: center;
+    }
+
+    .qr-panel h3 {
+      margin-bottom: 16px;
+      font-size: 22px;
+    }
+
+    .qr-panel img {
+      display: block;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto 18px;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .qr-close {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(57, 255, 136, 0.5);
+      border-radius: var(--radius);
+      color: var(--green);
+      background: rgba(57, 255, 136, 0.06);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     footer {
       padding: 28px 0;
       border-top: 1px solid rgba(57, 255, 136, 0.14);
@@ -910,17 +923,11 @@
         grid-template-columns: 1fr;
       }
 
-      .card {
+      .cards {
         grid-template-columns: 1fr;
       }
 
-      .card-index {
-        min-height: 96px;
-        border-right: 0;
-        border-bottom: 1px solid rgba(57, 255, 136, 0.18);
-      }
-
-      .price-zone {
+      .card {
         grid-template-columns: 1fr;
       }
 
@@ -981,11 +988,11 @@
 
       .status-strip span {
         padding: 9px 6px;
-        font-size: 10px;
+        font-size: 12px;
       }
 
       .node {
-        width: 104px;
+        width: 112px;
         min-height: 58px;
         font-size: 10px;
       }
@@ -993,6 +1000,7 @@
       .price-box h4 {
         display: block;
       }
+
 
       .price {
         display: block;
@@ -1074,7 +1082,23 @@
   <header class="topbar">
     <nav class="shell nav" aria-label="主导航">
       <a class="brand" href="#top" aria-label="NetX 首页">
-        
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" role="img">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="50" cy="50" r="34" stroke-width="9"></circle>
+              <circle cx="50" cy="50" r="9" fill="rgba(57, 255, 136, 0.22)" stroke-width="7"></circle>
+              <path d="M50 7v24M50 69v24M7 50h24M69 50h24M20 20l17 17M63 63l17 17M80 20L63 37M37 63L20 80" stroke-width="8"></path>
+              <circle cx="50" cy="7" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="50" cy="93" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="7" cy="50" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="93" cy="50" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="20" cy="20" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="80" cy="20" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="80" cy="80" r="5" fill="currentColor" stroke="none"></circle>
+              <circle cx="20" cy="80" r="5" fill="currentColor" stroke="none"></circle>
+            </g>
+          </svg>
+        </span>
         <span>NetX</span>
       </a>
       <div class="nav-links">
@@ -1088,21 +1112,20 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">NETX_SECURE_NETWORK // ONLINE</div>
           <h1>企业办公网络解决方案</h1>
           <p class="hero-lead">
             面向个人、小型团队及企业用户，提供共享节点、独享节点、软硬件一体化三种方案，灵活匹配不同场景，满足从日常办公到企业级网络需求的访问体验。
           </p>
           <div class="actions">
             <a class="btn" href="#solutions">查看方案</a>
-            <a class="btn secondary" href="#contact">联系我们</a>
+            <a class="btn secondary" href="#qr-modal" data-open-qr>联系我们</a>
           </div>
         </div>
 
         <aside class="cyber-visual" aria-label="NetX 网络节点矩阵">
           <div class="scan-card">
-            <span>NETX / SECURE ACCESS MAP</span>
-            <strong>ONLINE</strong>
+            <span>NETX / 安全接入拓扑</span>
+            <strong>在线</strong>
             <span class="signal-bars" aria-hidden="true">
               <span></span>
               <span></span>
@@ -1113,15 +1136,15 @@
           <span class="beam"></span>
           <span class="beam"></span>
           <div class="network-core" aria-hidden="true"></div>
-          <span class="node node-a">SHARED<br>ACCESS</span>
-          <span class="node node-b">PRIVATE<br>NODE</span>
-          <span class="node node-c">CN2<br>ROUTE</span>
-          <span class="node node-d">SECURE<br>TUNNEL</span>
-          <span class="node node-e">HYBRID<br>DEPLOY</span>
+          <span class="node node-a">共享接入</span>
+          <span class="node node-b">私有节点</span>
+          <span class="node node-c">CN2 线路</span>
+          <span class="node node-d">安全通道</span>
+          <span class="node node-e">混合部署</span>
           <div class="status-strip">
-            <span>LOW LATENCY</span>
-            <span>ENCRYPTED</span>
-            <span>ENTERPRISE READY</span>
+            <span>低延迟</span>
+            <span>加密通信</span>
+            <span>企业可用</span>
           </div>
         </aside>
       </div>
@@ -1131,14 +1154,11 @@
       <div class="shell">
         <div class="section-head">
           <h2>三大企业网络方案</h2>
-          <p class="section-note">从快速接入到定制部署，按团队规模、稳定性要求和管理复杂度选择合适方案。</p>
+          <p class="section-note">按团队规模、稳定性要求和管理复杂度选择合适方案。</p>
         </div>
 
         <div class="cards">
           <article class="card">
-            <div class="card-index">
-              <strong aria-hidden="true"></strong>
-            </div>
             <div class="card-inner">
               <h3>轻量办公，共享接入</h3>
               <p>快速接入，满足日常办公与基础网络需求。共享优质网络节点资源，无需部署，快速开通使用。</p>
@@ -1146,22 +1166,15 @@
                 <li>快速接入</li>
                 <li>安全通信</li>
                 <li>适合个人用户、小型团队、轻量办公需求</li>
+                <li>免部署开通，降低日常运维成本</li>
               </ul>
               <div class="price-zone">
                 <div class="price-box">
-                  <h4>极速版 <span class="price">¥500 / 年</span></h4>
+                  <h4>个人轻量接入 <span class="price">¥500起 / 年</span></h4>
                   <ul class="meta">
                     <li>1000G / 年</li>
                     <li>CN2 精品线路</li>
                     <li>低至 160ms</li>
-                  </ul>
-                </div>
-                <div class="price-box">
-                  <h4>至尊版 <span class="price">¥800 / 年</span></h4>
-                  <ul class="meta">
-                    <li>1000G / 年</li>
-                    <li>CN2 精品线路</li>
-                    <li>低至 170ms</li>
                   </ul>
                 </div>
               </div>
@@ -1169,9 +1182,6 @@
           </article>
 
           <article class="card">
-            <div class="card-index">
-              <strong aria-hidden="true"></strong>
-            </div>
             <div class="card-inner">
               <h3>企业私有，稳定独享</h3>
               <p>独立部署，为企业提供稳定专属网络环境。提供独立网络节点，私有独占，保障更稳定的网络体验。</p>
@@ -1196,9 +1206,6 @@
           </article>
 
           <article class="card">
-            <div class="card-index">
-              <strong aria-hidden="true"></strong>
-            </div>
             <div class="card-inner">
               <h3>企业专属，软硬一体</h3>
               <p>定制部署，打造企业级网络环境。结合 NetX 网络系统与企业级硬件设备，为企业打造专属网络解决方案</p>
@@ -1231,7 +1238,7 @@
             <h2>开始搭建企业专属网络</h2>
             <p>根据团队规模、访问场景、带宽需求与管理要求，选择适合的 NetX 办公网络方案。</p>
           </div>
-          <a class="btn" href="mailto:contact@example.com">联系我们</a>
+          <a class="btn" href="#qr-modal" data-open-qr>联系我们</a>
         </div>
       </div>
     </section>
@@ -1240,5 +1247,76 @@
   <footer>
     <div class="shell">© NetX Enterprise Network Solution</div>
   </footer>
+  <div class="qr-modal" id="qr-modal" aria-hidden="true">
+    <div class="qr-panel" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+      <h3 id="qr-title">扫码联系我们</h3>
+      <img src="weixin.jpg" alt="联系二维码">
+      <button class="qr-close" type="button" data-close-qr>关闭</button>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const matrix = document.querySelector(".matrix-bg");
+      if (!matrix || matrix.dataset.generated === "true") return;
+      matrix.dataset.generated = "true";
+      matrix.innerHTML = "";
+
+      const alphabet = "01NETXACCESSROUTELOCKVPNSECURENODEAUTHDATA";
+      const makeRain = (length, offset) => {
+        let value = "";
+        for (let i = 0; i < length; i += 1) {
+          value += alphabet[(i * 7 + offset * 11 + Math.floor(i / 3)) % alphabet.length];
+        }
+        return value;
+      };
+
+      for (let i = 0; i < 58; i += 1) {
+        const span = document.createElement("span");
+        const baseLeft = (i / 57) * 99;
+        const jitter = ((i * 17) % 9 - 4) * 0.32;
+        const left = Math.max(0, Math.min(99, baseLeft + jitter));
+        const len = 24 + ((i * 23) % 118);
+        const fall = i % 4 === 0 ? 56 + ((i * 11) % 24) : i % 5 === 0 ? 74 + ((i * 7) % 22) : 112;
+        const speed = 8.8 + ((i * 7) % 48) / 10;
+        const delay = -1 * ((i * 1.91) % speed);
+        span.className = i % 8 === 0 ? "matrix-flash" : "matrix-stream";
+        span.textContent = makeRain(len, i);
+        span.style.left = `${left.toFixed(2)}%`;
+        span.style.setProperty("--speed", `${speed}s`);
+        span.style.setProperty("--delay", `${delay.toFixed(2)}s`);
+        span.style.setProperty("--length", `${Math.min(138, 30 + len * 0.72)}vh`);
+        span.style.setProperty("--fall", `${fall}vh`);
+        span.style.setProperty("--size", `${12 + (i % 4)}px`);
+        span.style.setProperty("--alpha", `${(0.48 + ((i * 13) % 42) / 100).toFixed(2)}`);
+        span.style.setProperty("--flicker", `${(1.45 + (i % 7) * 0.22).toFixed(2)}s`);
+        matrix.appendChild(span);
+      }
+    })();
+
+    (() => {
+      const modal = document.querySelector("#qr-modal");
+      if (!modal) return;
+      const openers = document.querySelectorAll("[data-open-qr]");
+      const close = () => {
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+      };
+      const open = (event) => {
+        event.preventDefault();
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+        modal.querySelector("[data-close-qr]")?.focus();
+      };
+
+      openers.forEach((opener) => opener.addEventListener("click", open));
+      modal.querySelector("[data-close-qr]")?.addEventListener("click", close);
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) close();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") close();
+      });
+    })();
+  </script>
 </body>
 </html>
