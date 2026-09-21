@@ -1,5 +1,44 @@
 # NetX 企业办公网络解决方案
 
+本仓库包含 NetX 的独立静态落地页和用户中心应用。
+
+## 项目结构
+
+- `landing/`：静态落地页，部署到站点根路径 `/`
+- `dashboard/`：独立 Next.js 应用，部署到 `/dashboard`
+- `CNAME`：当前域名记录 `netx.beisi.tech`
+
+落地页不参与 dashboard 的 Next.js 构建。生产环境建议使用 Nginx 或同类反向代理：根路径直接提供 `landing/`，`/dashboard` 及其资源、API 转发到 Next.js 服务。Next.js 页面入口位于 `dashboard/app/page.tsx`，由 `basePath` 映射到外部的 `/dashboard`。
+
+## Dashboard 本地开发
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+开发服务启动后访问 `http://localhost:3000/dashboard`。
+
+健康检查接口为 `http://localhost:3000/dashboard/api/health`。
+
+## Dashboard 生产运行
+
+```bash
+cd dashboard
+npm install
+npm run build
+npm run start
+```
+
+Next.js 服务默认监听 `3000` 端口。反向代理应保留 `/dashboard` 前缀，不要在转发时剥离路径。
+
+仓库提供了 `deploy/nginx.conf.example` 作为最小反向代理示例。部署时需要按服务器实际目录调整其中的 `root`，并在生产环境配置 HTTPS。
+
+## 落地页内容
+
+---
+
 > 面向个人、小型团队及企业用户，提供共享节点、独享节点、软硬件一体化三种方案，灵活适配不同场景，满足从日常办公到企业级网络需求的访问体验。
 
 ---
@@ -147,6 +186,3 @@
 ## 开始搭建企业专属网络
 
 联系我们
-
-
-
