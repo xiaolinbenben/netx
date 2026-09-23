@@ -5,7 +5,7 @@ services:
     image: ${DOCKERHUB_USERNAME}/netx:main-${IMAGE_TAG}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8000:80"
+      - "8000:80"
     networks:
       - internal
     depends_on:

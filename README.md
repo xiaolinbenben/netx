@@ -72,7 +72,7 @@ chmod 600 .env
 vim .env
 ```
 
-服务器需安装 Docker Engine 和 Compose 插件，部署用户需有权限直接执行 `docker`。只有 Nginx 容器绑定宿主机的 `127.0.0.1:8080`，Dashboard 和 Go 服务不发布任何宿主机端口，只能通过内部 Docker 网络访问。宿主机现有的 HTTPS 反向代理应转发到 `127.0.0.1:8080`。SQLite 数据保存在 Docker named volume `netx_server-data` 中，更新容器不会删除数据。
+服务器需安装 Docker Engine 和 Compose 插件，部署用户需有权限直接执行 `docker`。只有 Nginx 容器绑定宿主机的 `8000` 端口，Dashboard 和 Go 服务不发布任何宿主机端口，只能通过内部 Docker 网络访问。宿主机现有的 HTTPS 反向代理应转发到宿主机的 `8000` 端口。SQLite 数据保存在 Docker named volume `netx_server-data` 中，更新容器不会删除数据。
 
 ## 管理端与后端
 
