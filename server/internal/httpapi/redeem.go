@@ -14,7 +14,7 @@ func (s *Server) handleRedeem(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	code := strings.TrimSpace(strings.ToUpper(req.Code))
+	code := strings.TrimSpace(req.Code)
 	if code == "" {
 		fail(w, http.StatusBadRequest, "请输入兑换码")
 		return

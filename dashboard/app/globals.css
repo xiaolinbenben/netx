@@ -159,14 +159,12 @@ h2 { margin-bottom: 0; font-size: 22px; }
 .access-shell { padding-bottom: 70px; }
 .access-state { color: var(--green); font-size: 13px; }
 .access-state .status-dot { display: inline-block; margin-right: 8px; }
-.access-hero { padding: 88px 0 48px; }
-.access-hero h1 { max-width: 680px; margin-bottom: 18px; }
-.access-hero > p:last-child { color: var(--muted); font-size: 16px; }
-.access-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.access-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-top: 88px; }
 .access-card { min-height: 255px; padding: 27px; border: 1px solid var(--line); background: var(--surface); }
 .url-box { overflow-wrap: anywhere; margin: 22px 0 18px; padding: 15px; border: 1px solid var(--line); color: var(--cyan); background: rgba(0,0,0,.18); font: 12px/1.6 monospace; }
+.access-instruction { margin: 18px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .usage-number { margin-top: 28px; font-size: 50px; font-weight: 800; }.usage-number small { color: var(--muted); font-size: 16px; }
 .usage-bar { height: 6px; margin: 16px 0 9px; background: #172b21; }.usage-bar span { display: block; width: 2%; height: 100%; background: var(--green); }
 .usage-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
-.access-list { margin: 25px 0 0; }.access-list div { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--line); font-size: 12px; }.access-list dt { color: var(--muted); }.access-list dd { margin: 0; color: var(--cyan); }.access-list .online { color: var(--green); }.access-note { margin-top: 18px; color: var(--muted); font-size: 12px; }
-@media (max-width: 700px) { .topbar-actions { font-size: 0; }.topbar-actions .status-dot { margin-right: 0; }.text-button { font-size: 12px; }.home-hero { padding-top: 58px; }.hero-actions { flex-wrap: wrap; }.section-heading, .redeem-strip { align-items: flex-start; flex-direction: column; }.plans-grid, .access-grid { grid-template-columns: 1fr; }.plan-card ul { grid-template-columns: 1fr; }.access-hero { padding-top: 58px; }.access-state { font-size: 11px; } }
+.access-list { margin: 25px 0 0; }.access-list div { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--line); font-size: 12px; }.access-list dt { color: var(--muted); }.access-list dd { margin: 0; color: var(--cyan); }.access-list .online { color: var(--green); }
+@media (max-width: 700px) { .topbar-actions { font-size: 0; }.topbar-actions .status-dot { margin-right: 0; }.text-button { font-size: 12px; }.home-hero { padding-top: 58px; }.hero-actions { flex-wrap: wrap; }.section-heading, .redeem-strip { align-items: flex-start; flex-direction: column; }.plans-grid, .access-grid { grid-template-columns: 1fr; }.plan-card ul { grid-template-columns: 1fr; }.access-grid { margin-top: 58px; }.access-state { font-size: 11px; } }

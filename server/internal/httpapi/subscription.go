@@ -14,7 +14,7 @@ import (
 const maxSubscriptionSize = 10 << 20
 
 func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
-	code := strings.ToUpper(strings.TrimSpace(r.PathValue("code")))
+	code := strings.TrimSpace(r.PathValue("code"))
 	if code == "" {
 		fail(w, http.StatusNotFound, "订阅不存在")
 		return
@@ -62,6 +62,6 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
-	w.Header().Set("Content-Disposition", `inline; filename="`+code+`.yaml"`)
+	w.Header().Set("Content-Disposition", `attachment; filename=`+code+`.yaml`)
 	_, _ = w.Write(body)
 }

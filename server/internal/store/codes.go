@@ -21,13 +21,10 @@ var (
 	ErrCodeUsed     = errors.New("已使用的兑换码不能修改")
 )
 
-// 兑换码字符集：Crockford Base32，去掉容易混淆的 I、L、O、U
-const codeAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-
+// 兑换码只使用小写数字和字母，便于直接放入 URL 和文件名。
 const (
-	codePrefix   = "NETX-"
-	codeGroups   = 3
-	codeGroupLen = 4
+	codeAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+	codeLength   = 16
 )
 
 type Code struct {
@@ -89,23 +86,27 @@ type CodeFilter struct {
 	Keyword string
 }
 
-// NewCode 生成一个 NETX-XXXX-XXXX-XXXX 形式的随机兑换码。
+// NewCode 生成一个 16 位小写字母数字随机兑换码。
 func NewCode() (string, error) {
-	buf := make([]byte, codeGroups*codeGroupLen)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("生成随机兑换码失败: %w", err)
-	}
-
-	var builder strings.Builder
-	builder.WriteString(codePrefix)
-	for i, b := range buf {
-		if i > 0 && i%codeGroupLen == 0 {
-			builder.WriteByte('-')
+	const maxByte = 256 - (256 % len(codeAlphabet))
+	code := make([]byte, codeLength)
+	buffer := make([]byte, codeLength)
+	for written := 0; written < codeLength; {
+		if _, err := rand.Read(buffer); err != nil {
+			return "", fmt.Errorf("生成随机兑换码失败: %w", err)
 		}
-		// 256 能被 32 整除，取模没有偏差
-		builder.WriteByte(codeAlphabet[int(b)%len(codeAlphabet)])
+		for _, b := range buffer {
+			if int(b) >= maxByte {
+				continue
+			}
+			code[written] = codeAlphabet[int(b)%len(codeAlphabet)]
+			written++
+			if written == codeLength {
+				break
+			}
+		}
 	}
-	return builder.String(), nil
+	return string(code), nil
 }
 
 // CreateCodes 批量生成兑换码，返回本次创建的记录。

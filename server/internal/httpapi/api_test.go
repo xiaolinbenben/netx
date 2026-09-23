@@ -186,7 +186,7 @@ func TestLoginAndAuthGuard(t *testing.T) {
 
 func TestGenerateAndListCodes(t *testing.T) {
 	env := newTestEnv(t)
-	pattern := regexp.MustCompile(`^NETX-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$`)
+	pattern := regexp.MustCompile(`^[0-9a-z]{16}$`)
 
 	recorder, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
 		"count": 5,
@@ -420,6 +420,9 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	}
 	if got := recorder.Header().Get("Content-Type"); got != "application/yaml; charset=utf-8" {
 		t.Fatalf("订阅 Content-Type 不正确: %s", got)
+	}
+	if got := recorder.Header().Get("Content-Disposition"); got != "attachment; filename="+code+".yaml" {
+		t.Fatalf("订阅文件名不正确: %s", got)
 	}
 	if got := recorder.Body.String(); got != "proxies:\n  - name: test\n" {
 		t.Fatalf("订阅内容不正确: %s", got)
