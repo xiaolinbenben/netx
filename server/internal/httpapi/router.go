@@ -39,6 +39,7 @@ func New(cfg config.Config, db *store.DB, adminFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/admin/settings", server.requireAuth(server.handleGetSettings))
 	mux.HandleFunc("PUT /api/admin/settings", server.requireAuth(server.handleSaveSettings))
 	mux.HandleFunc("POST /api/redeem", server.handleRedeem)
+	mux.HandleFunc("GET /sub/{code}", server.handleSubscription)
 	mux.Handle("GET /admin/", server.adminHandler())
 
 	return logAPIRequests(mux)

@@ -41,6 +41,25 @@ type Code struct {
 	SubscriptionURL string
 }
 
+// FindCode 查询兑换码，不改变兑换码状态。
+func (d *DB) FindCode(code string) (Code, error) {
+	var item Code
+	var createdAt, usedAt sql.NullInt64
+	err := d.QueryRow("SELECT id, code, note, status, created_at, used_at, plan, subscription_url FROM codes WHERE code = ?", code).Scan(&item.ID, &item.Code, &item.Note, &item.Status, &createdAt, &usedAt, &item.Plan, &item.SubscriptionURL)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Code{}, ErrCodeNotFound
+	}
+	if err != nil {
+		return Code{}, err
+	}
+	item.CreatedAt = time.Unix(createdAt.Int64, 0).UTC()
+	if usedAt.Valid {
+		used := time.Unix(usedAt.Int64, 0).UTC()
+		item.UsedAt = &used
+	}
+	return item, nil
+}
+
 // RedeemCode 原子地消费一个兑换码，并返回其订阅配置。
 func (d *DB) RedeemCode(code string) (Code, error) {
 	var item Code

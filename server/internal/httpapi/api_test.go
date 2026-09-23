@@ -394,3 +394,34 @@ func TestAdminStaticFilesAndFallback(t *testing.T) {
 		t.Fatalf("前端路由应回落到入口页，实际 %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
+
+func TestSubscriptionProxyReturnsYAML(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/yaml")
+		_, _ = w.Write([]byte("proxies:\n  - name: test\n"))
+	}))
+	defer upstream.Close()
+
+	env := newTestEnv(t)
+	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"subscriptionUrl": upstream.URL + "/profile.yaml",
+	}, env.token)
+	code := itemsOf(t, payload)[0]["code"].(string)
+	if recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, ""); recorder.Code != http.StatusNotFound {
+		t.Fatalf("未兑换码不应提供订阅，实际 %d", recorder.Code)
+	}
+
+	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, ""); recorder.Code != http.StatusOK {
+		t.Fatalf("兑换应成功，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+	recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, "")
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("订阅代理应返回 200，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+	if got := recorder.Header().Get("Content-Type"); got != "application/yaml; charset=utf-8" {
+		t.Fatalf("订阅 Content-Type 不正确: %s", got)
+	}
+	if got := recorder.Body.String(); got != "proxies:\n  - name: test\n" {
+		t.Fatalf("订阅内容不正确: %s", got)
+	}
+}
