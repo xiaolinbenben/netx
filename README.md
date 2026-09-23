@@ -45,12 +45,12 @@ Next.js 服务默认监听 `3000` 端口。反向代理应保留 `/dashboard` �
 
 推送 `main` 后，[GitHub Actions](.github/workflows/deploy.yml) 会构建 `linux/amd64` 镜像，推送 `latest` 和 Git commit SHA 两种标签，再通过 SSH 将 [Compose 配置](deploy/docker-compose.yml) 部署到服务器的 `/opt/netx/deploy`。
 
-Docker Hub 需要新建一个名为 `netx` 的仓库，并创建具有 Read & Write 权限的 Access Token。GitHub 仓库的 Settings -> Secrets and variables -> Actions 中配置：
+Docker Hub 需要新建一个名为 `netx` 的公共仓库，并创建具有 Read & Write 权限的 Access Token 用于 GitHub Actions 推送镜像。服务器拉取公共镜像不需要 Docker Hub 登录。GitHub 仓库的 Settings -> Secrets and variables -> Actions 中配置：
 
 | Secret | 说明 |
 |---|---|
 | `DOCKERHUB_USERNAME` | Docker Hub 用户名 |
-| `DOCKERHUB_TOKEN` | Docker Hub Access Token，不使用账号密码 |
+| `DOCKERHUB_TOKEN` | Docker Hub Access Token，用于 GitHub Actions 推送镜像，不使用账号密码 |
 
 再创建名为 `production` 的 GitHub Environment，并在其中配置部署 Secrets：
 
