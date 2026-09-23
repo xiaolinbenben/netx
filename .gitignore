@@ -4,3 +4,11 @@ node_modules/
 *.tsbuildinfo
 .env*.local
 .DS_Store
+deploy/.env
+
+# 后端
+server/.env
+server/bin/
+server/data/
+server/web/dist/*
+!server/web/dist/.gitkeep

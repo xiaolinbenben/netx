@@ -1,0 +1,14 @@
+.git
+.github
+.playwright-cli
+deploy
+spec
+landing
+dashboard
+**/node_modules
+**/.next
+**/*.tsbuildinfo
+server/.env
+server/bin
+server/data
+

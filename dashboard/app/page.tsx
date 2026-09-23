@@ -1,97 +1,23 @@
-const overview = [
-  { label: "在线节点", value: "0", detail: "暂无已连接节点" },
-  { label: "本月流量", value: "0 GB", detail: "统计数据准备中" },
-  { label: "服务状态", value: "正常", detail: "用户中心服务在线" },
+"use client";
+
+import { useState } from "react";
+
+const plans = [
+  { id: "极速版", tag: "日常通用", price: "500", accent: "cyan", description: "稳定访问日常网站、办公和流媒体服务。", features: ["1000G / 年流量", "CN2 精品线路", "低至 160ms 延迟", "适合日常网络访问"] },
+  { id: "至尊版", tag: "AI 专用优化", price: "800", accent: "gold", description: "为 ChatGPT、Claude、Gemini、Cursor、Codex 做专项适配。", features: ["1000G / 年流量", "CN2 精品线路", "低至 170ms 延迟", "AI 应用专项适配"] },
 ];
 
 export default function DashboardPage() {
-  return (
-    <main className="dashboard-shell">
-      <header className="topbar">
-        <a className="brand" href="/dashboard">
-          <span className="brand-mark" aria-hidden="true">
-            NX
-          </span>
-          <span>NetX</span>
-        </a>
-        <div className="topbar-meta">
-          <span className="status-dot" aria-hidden="true" />
-          服务正常
-        </div>
-      </header>
-
-      <section className="hero">
-        <div>
-          <p className="eyebrow">NETX USER CENTER</p>
-          <h1>网络连接，一目了然。</h1>
-          <p className="hero-copy">欢迎进入 NetX 用户中心。节点、流量和服务配置将在这里集中管理。</p>
-        </div>
-        <div className="hero-code" aria-hidden="true">
-          <span>ACCESS</span>
-          <strong>READY</strong>
-        </div>
-      </section>
-
-      <section className="overview-grid" aria-label="服务概览">
-        {overview.map((item) => (
-          <article className="metric" key={item.label}>
-            <p>{item.label}</p>
-            <strong>{item.value}</strong>
-            <span>{item.detail}</span>
-          </article>
-        ))}
-      </section>
-
-      <section className="workspace-grid">
-        <article className="panel panel-primary">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">WORKSPACE</p>
-              <h2>开始使用 NetX</h2>
-            </div>
-            <span className="panel-index">01</span>
-          </div>
-          <p className="panel-copy">
-            这是用户中心的基础版本。后续可以在这里接入账号、套餐、节点和配置管理功能。
-          </p>
-          <div className="next-step">
-            <span className="next-step-icon" aria-hidden="true">+</span>
-            <div>
-              <strong>功能模块准备中</strong>
-              <span>当前没有需要处理的事项</span>
-            </div>
-          </div>
-        </article>
-
-        <article className="panel system-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">SYSTEM</p>
-              <h2>系统信息</h2>
-            </div>
-            <span className="panel-index">02</span>
-          </div>
-          <dl className="system-list">
-            <div>
-              <dt>区域</dt>
-              <dd>Global</dd>
-            </div>
-            <div>
-              <dt>环境</dt>
-              <dd>Production</dd>
-            </div>
-            <div>
-              <dt>版本</dt>
-              <dd>0.1.0</dd>
-            </div>
-          </dl>
-        </article>
-      </section>
-
-      <footer className="footer">
-        <span>NetX Enterprise Network Solution</span>
-        <span>用户中心基础版本</span>
-      </footer>
-    </main>
-  );
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [message, setMessage] = useState("");
+  async function redeem() { const value = code.trim().toUpperCase(); if (!value) { setMessage("请输入兑换码"); return; } try { const response = await fetch("/api/redeem", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: value }) }); const payload = await response.json(); if (!response.ok || !payload.data?.accessPath) throw new Error(payload.message || "兑换失败"); window.location.href = payload.data.accessPath; } catch (error) { setMessage(error instanceof Error ? error.message : "兑换失败，请检查卡密"); } }
+  return <main className="dashboard-shell home-shell">
+    <header className="topbar"><a className="brand" href="/dashboard"><span className="brand-mark">NX</span><span>NetX 网络服务中心</span></a></header>
+    <section className="section-heading" id="plans"><div><p className="eyebrow">01 / PLANS</p><h2>选择你的 AI 专线</h2></div></section>
+    <section className="plans-grid" aria-label="套餐选择">{plans.map((plan) => <article className={`plan-card ${plan.accent}`} key={plan.id}><div className="plan-top"><div><span className="plan-tag">{plan.tag}</span><h3>{plan.id}</h3></div><span className="plan-symbol">{plan.accent === "gold" ? "♛" : "ϟ"}</span></div><p className="plan-description">{plan.description}</p><div className="plan-price"><span>¥</span>{plan.price}<small>/ 年</small></div><ul>{plan.features.map((feature) => <li key={feature}><span>+</span>{feature}</li>)}</ul><button className="plan-button" onClick={() => setMessage(`${plan.id}订单已准备，支付宝支付配置完成后即可下单。`)}>购买 {plan.id}<span>→</span></button></article>)}</section>
+    <section className="redeem-strip"><div><p className="eyebrow">02 / ACTIVATE</p><h2>已有卡密？立即兑换</h2><p>兑换后获得专属套餐。</p></div><button className="outline-button" onClick={() => setRedeemOpen(true)}>输入兑换码 <span>→</span></button></section>
+    {message && <div className="toast" role="status">{message}<button onClick={() => setMessage("")}>×</button></div>}
+    {redeemOpen && <div className="modal-backdrop" onClick={() => setRedeemOpen(false)}><div className="redeem-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setRedeemOpen(false)}>×</button><p className="eyebrow">ACTIVATE ACCESS</p><h2>兑换你的 NetX 卡密</h2><p>输入后台生成的卡密，兑换专属订阅。</p><input autoFocus value={code} onChange={(event) => setCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && redeem()} placeholder="NETX-XXXX-XXXX-XXXX" /><button className="primary-button full-button" onClick={redeem}>继续兑换 <span>→</span></button>{message && <small className="error-text">{message}</small>}</div></div>}
+  </main>;
 }

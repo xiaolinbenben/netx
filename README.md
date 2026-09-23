@@ -1,11 +1,13 @@
 # NetX 企业办公网络解决方案
 
-本仓库包含 NetX 的独立静态落地页和用户中心应用。
+本仓库包含 NetX 的独立静态落地页、用户中心应用和管理端。
 
 ## 项目结构
 
 - `landing/`：静态落地页，部署到站点根路径 `/`
 - `dashboard/`：独立 Next.js 应用，部署到 `/dashboard`
+- `admin/`：管理端前端（Vue3 + Vite + Element Plus，基于 pure-admin-thin 裁剪），构建产物由 `server/` 打进 Go 二进制，部署到 `/admin`
+- `server/`：Go 后端（标准库 + SQLite），提供 `/api` 接口与 `/admin` 静态资源
 - `CNAME`：当前域名记录 `netx.beisi.tech`
 
 落地页不参与 dashboard 的 Next.js 构建。生产环境建议使用 Nginx 或同类反向代理：根路径直接提供 `landing/`，`/dashboard` 及其资源、API 转发到 Next.js 服务。Next.js 页面入口位于 `dashboard/app/page.tsx`，由 `basePath` 映射到外部的 `/dashboard`。
@@ -33,7 +35,82 @@ npm run start
 
 Next.js 服务默认监听 `3000` 端口。反向代理应保留 `/dashboard` 前缀，不要在转发时剥离路径。
 
-仓库提供了 `deploy/nginx.conf.example` 作为最小反向代理示例。部署时需要按服务器实际目录调整其中的 `root`，并在生产环境配置 HTTPS。
+## Docker 部署与 CI/CD
+
+生产环境使用三个独立容器，镜像统一发布到 Docker Hub 的同一个 `netx` 仓库：
+
+- `netx:main-<版本>`：Nginx、落地页和内部反向代理（唯一绑定宿主机端口的容器）
+- `netx:dashboard-<版本>`：Dashboard Next.js 服务
+- `netx:server-<版本>`：Go API 和内嵌的 Admin
+
+推送 `main` 后，[GitHub Actions](.github/workflows/deploy.yml) 会构建 `linux/amd64` 镜像，推送 `latest` 和 Git commit SHA 两种标签，再通过 SSH 将 [Compose 配置](deploy/docker-compose.yml) 部署到服务器的 `/opt/netx/deploy`。
+
+Docker Hub 需要新建一个名为 `netx` 的仓库，并创建具有 Read & Write 权限的 Access Token。GitHub 仓库的 Settings -> Secrets and variables -> Actions 中配置：
+
+| Secret | 说明 |
+|---|---|
+| `DOCKERHUB_USERNAME` | Docker Hub 用户名 |
+| `DOCKERHUB_TOKEN` | Docker Hub Access Token，不使用账号密码 |
+
+再创建名为 `production` 的 GitHub Environment，并在其中配置部署 Secrets：
+
+| Secret | 说明 |
+|---|---|
+| `SERVER_HOST` | Linux 服务器域名或 IP |
+| `SERVER_USER` | 可运行 Docker 的 SSH 用户，不配置默认为 `root` |
+| `SERVER_SSH_KEY` | SSH 私钥全文 |
+
+服务器首次部署前执行一次初始化，并编辑生产配置：
+
+```bash
+sudo mkdir -p /opt/netx/deploy
+sudo chown -R "$USER":"$USER" /opt/netx
+cd /opt/netx/deploy
+# 首次推送 main 后，CI 会上传这份模板
+cp .env.example .env
+chmod 600 .env
+vim .env
+```
+
+服务器需安装 Docker Engine 和 Compose 插件，部署用户需有权限直接执行 `docker`。只有 Nginx 容器绑定宿主机的 `127.0.0.1:8080`，Dashboard 和 Go 服务不发布任何宿主机端口，只能通过内部 Docker 网络访问。宿主机现有的 HTTPS 反向代理应转发到 `127.0.0.1:8080`。SQLite 数据保存在 Docker named volume `netx_server-data` 中，更新容器不会删除数据。
+
+## 管理端与后端
+
+管理端是 Go 后端的一部分：`admin/` 的构建产物输出到 `server/web/dist`，由 Go 通过 `go:embed` 打进二进制，由同一个进程提供 `/admin` 静态页与 `/api` 接口。dashboard 仍是独立的 Next.js 服务。
+
+后端配置全部来自环境变量：
+
+| 环境变量 | 说明 | 默认值 |
+|---|---|---|
+| `PORT` | 监听端口 | `8080` |
+| `DB_PATH` | SQLite 数据库文件路径 | `./data/netx.db` |
+| `ADMIN_USERNAME` | 管理员账号，必填 | 无 |
+| `ADMIN_PASSWORD` | 管理员密码，必填 | 无 |
+| `JWT_SECRET` | 登录凭证签名密钥，必填 | 无 |
+访问令牌有效期在后端源码中固定为 2 小时，不通过环境变量配置；刷新令牌有效期固定为 7 天。
+
+管理端本地开发（需要两个终端）：
+
+```bash
+cp server/.env.example server/.env
+# 编辑 server/.env，设置管理员账号、密码和固定的 JWT 密钥
+make admin-install        # 首次安装管理端依赖（使用 pnpm）
+make server-dev           # 终端一：Go 后端，监听 8080
+make admin-dev            # 终端二：管理端开发服务
+```
+
+`server/.env` 已被 Git 忽略，由 `make server-dev` 加载；直接在 `server/` 运行 `go run .` 时仍需自行设置环境变量。生产运行只读取进程环境变量。
+
+浏览器访问 `http://localhost:5173/admin/`，接口请求由 Vite 代理到 8080。
+
+生产构建与运行：
+
+```bash
+make build                # 先构建管理端，再构建 server/bin/netx-server
+cd server && ./bin/netx-server
+```
+
+反向代理需要把 `/admin` 与 `/api` 都转发到该进程。
 
 ## 落地页内容
 
