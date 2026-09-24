@@ -3,7 +3,7 @@ import { http } from "@/utils/http";
 export type SettingField = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "bool";
+  type: "text" | "textarea";
   secret: boolean;
   value: string;
   configured: boolean;

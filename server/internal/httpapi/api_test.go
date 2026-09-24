@@ -302,10 +302,33 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 
 	_, payload := env.do(t, http.MethodGet, "/api/admin/settings", nil, env.token)
 	groups, _ := payload["data"].(map[string]any)["groups"].([]any)
-	if len(groups) != 1 {
-		t.Fatalf("应返回 1 组配置，实际 %d", len(groups))
+	if len(groups) != 2 {
+		t.Fatalf("应返回 2 组配置，实际 %d", len(groups))
 	}
-	group := groups[0].(map[string]any)
+	var group map[string]any
+	for _, raw := range groups {
+		candidate := raw.(map[string]any)
+		if candidate["key"] == "alipay" {
+			group = candidate
+		}
+	}
+	if group == nil {
+		t.Fatal("缺少支付宝配置分组")
+	}
+	var appGroup map[string]any
+	for _, raw := range groups {
+		candidate := raw.(map[string]any)
+		if candidate["key"] == "app" {
+			appGroup = candidate
+		}
+	}
+	if appGroup == nil {
+		t.Fatal("缺少系统配置分组")
+	}
+	appFields := appGroup["fields"].([]any)
+	if len(appFields) != 1 || appFields[0].(map[string]any)["value"] != "https://netx.beisi.tech" {
+		t.Fatalf("项目根地址默认值不正确: %v", appFields)
+	}
 	if group["title"] != "支付宝" {
 		t.Fatalf("配置分组标题不正确: %v", group["title"])
 	}
@@ -325,7 +348,6 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 		"values": map[string]string{
 			"alipay.app_id":      "2021000000000000",
 			"alipay.private_key": "MIIEvQIBADANBgkqhkiG9w0BAQEFAA0C",
-			"alipay.sandbox":     "true",
 		},
 	}, env.token)
 	if recorder.Code != http.StatusOK {
@@ -334,15 +356,12 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 
 	_, payload = env.do(t, http.MethodGet, "/api/admin/settings", nil, env.token)
 	fields = map[string]map[string]any{}
-	for _, raw := range payload["data"].(map[string]any)["groups"].([]any)[0].(map[string]any)["fields"].([]any) {
+	for _, raw := range alipayGroupFromPayload(t, payload)["fields"].([]any) {
 		field := raw.(map[string]any)
 		fields[field["key"].(string)] = field
 	}
 	if fields["alipay.app_id"]["value"] != "2021000000000000" {
 		t.Fatalf("APPID 未保存成功: %v", fields["alipay.app_id"]["value"])
-	}
-	if fields["alipay.sandbox"]["value"] != "true" {
-		t.Fatalf("沙箱开关未保存成功: %v", fields["alipay.sandbox"]["value"])
 	}
 	key := fields["alipay.private_key"]
 	if key["configured"] != true {
@@ -362,7 +381,7 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 		t.Fatalf("保存配置应返回 200，实际 %d", recorder.Code)
 	}
 	_, payload = env.do(t, http.MethodGet, "/api/admin/settings", nil, env.token)
-	for _, raw := range payload["data"].(map[string]any)["groups"].([]any)[0].(map[string]any)["fields"].([]any) {
+	for _, raw := range alipayGroupFromPayload(t, payload)["fields"].([]any) {
 		field := raw.(map[string]any)
 		if field["key"] == "alipay.private_key" && field["configured"] != true {
 			t.Fatalf("未提交的密钥不应被清空: %v", field)
@@ -374,11 +393,19 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 	}, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("未知配置项应返回 400，实际 %d", recorder.Code)
 	}
-	if recorder, _ := env.do(t, http.MethodPut, "/api/admin/settings", map[string]any{
-		"values": map[string]string{"alipay.sandbox": "yes"},
-	}, env.token); recorder.Code != http.StatusBadRequest {
-		t.Fatalf("非法布尔值应返回 400，实际 %d", recorder.Code)
+}
+
+func alipayGroupFromPayload(t *testing.T, payload map[string]any) map[string]any {
+	t.Helper()
+	groups := payload["data"].(map[string]any)["groups"].([]any)
+	for _, raw := range groups {
+		group := raw.(map[string]any)
+		if group["key"] == "alipay" {
+			return group
+		}
 	}
+	t.Fatal("缺少支付宝配置分组")
+	return nil
 }
 
 func TestAdminStaticFilesAndFallback(t *testing.T) {
@@ -426,5 +453,33 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	}
 	if got := recorder.Body.String(); got != "proxies:\n  - name: test\n" {
 		t.Fatalf("订阅内容不正确: %s", got)
+	}
+}
+
+func TestPaymentOrderLifecycle(t *testing.T) {
+	env := newTestEnv(t)
+	order, err := env.db.CreatePaymentOrder("极速版", "https://upstream.example/profile.yaml", 50000)
+	if err != nil {
+		t.Fatalf("创建支付订单失败: %v", err)
+	}
+	if order.Status != store.PaymentPending || order.Code == "" {
+		t.Fatalf("新订单状态或兑换码不正确: %+v", order)
+	}
+	paid, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000001", 50000)
+	if err != nil {
+		t.Fatalf("标记支付成功失败: %v", err)
+	}
+	if paid.Status != store.PaymentPaid {
+		t.Fatalf("支付成功后订单状态不正确: %+v", paid)
+	}
+	code, err := env.db.FindCode(order.Code)
+	if err != nil || code.Status != store.StatusUsed {
+		t.Fatalf("支付成功后兑换码应自动启用: code=%+v err=%v", code, err)
+	}
+	if _, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000001", 50000); err != nil {
+		t.Fatalf("重复通知应幂等成功: %v", err)
+	}
+	if _, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000001", 1); err != store.ErrPaymentAmount {
+		t.Fatalf("金额不匹配应拒绝，实际 %v", err)
 	}
 }

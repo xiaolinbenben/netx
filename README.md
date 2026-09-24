@@ -112,6 +112,17 @@ cd server && ./bin/netx-server
 
 反向代理需要把 `/admin` 与 `/api` 都转发到该进程。
 
+### 支付宝配置
+
+管理端的“系统配置”中填写项目运行根地址，生产环境使用 `https://netx.beisi.tech`。支付宝配置只需要填写 APPID、应用私钥、支付宝公钥和默认订阅源地址；不再填写通知地址、同步跳转地址或沙箱开关。
+
+支付请求会自动使用以下地址：
+
+- 异步通知：`https://netx.beisi.tech/api/payment/alipay/notify`
+- 支付完成跳转：`https://netx.beisi.tech/access/<兑换码>`
+
+支付成功后，系统会校验支付宝 RSA2 签名，生成订单对应的兑换码，并跳转到专属访问页。默认订阅源地址必须是可直接返回 YAML 订阅内容的 HTTPS 地址。
+
 ## 落地页内容
 
 ---

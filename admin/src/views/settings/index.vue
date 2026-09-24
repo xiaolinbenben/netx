@@ -55,7 +55,7 @@ async function save() {
         if (value !== "") values[field.key] = value;
         return;
       }
-      values[field.key] = field.type === "bool" ? String(value) : value;
+      values[field.key] = value;
     });
   });
   try {
@@ -87,14 +87,7 @@ onMounted(load);
           :key="field.key"
           :label="field.label"
         >
-          <el-switch
-            v-if="field.type === 'bool'"
-            v-model="form[field.key]"
-            active-value="true"
-            inactive-value="false"
-          />
           <el-input
-            v-else
             v-model="form[field.key]"
             :type="field.type === 'textarea' ? 'textarea' : 'text'"
             :rows="4"

@@ -38,6 +38,8 @@ func New(cfg config.Config, db *store.DB, adminFS fs.FS) http.Handler {
 	mux.HandleFunc("PATCH /api/admin/codes/{id}", server.requireAuth(server.handleUpdateCodeStatus))
 	mux.HandleFunc("GET /api/admin/settings", server.requireAuth(server.handleGetSettings))
 	mux.HandleFunc("PUT /api/admin/settings", server.requireAuth(server.handleSaveSettings))
+	mux.HandleFunc("POST /api/payment/alipay/create", server.handleCreateAlipayPayment)
+	mux.HandleFunc("POST /api/payment/alipay/notify", server.handleAlipayNotify)
 	mux.HandleFunc("POST /api/redeem", server.handleRedeem)
 	mux.HandleFunc("GET /sub/{code}", server.handleSubscription)
 	mux.Handle("GET /admin/", server.adminHandler())

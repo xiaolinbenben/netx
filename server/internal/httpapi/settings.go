@@ -25,6 +25,19 @@ type settingGroup struct {
 // settingsSchema 是系统配置的白名单，新增配置项只需要在这里加一行。
 var settingsSchema = []settingGroup{
 	{
+		Key:   "app",
+		Title: "系统",
+		Fields: []settingField{
+			{
+				Key:         "app.base_url",
+				Label:       "项目运行根地址",
+				Type:        "text",
+				Default:     "https://netx.beisi.tech",
+				Placeholder: "https://netx.beisi.tech",
+			},
+		},
+	},
+	{
 		Key:   "alipay",
 		Title: "支付宝",
 		Fields: []settingField{
@@ -38,9 +51,12 @@ var settingsSchema = []settingGroup{
 			},
 			{Key: "alipay.private_key", Label: "应用私钥", Type: "textarea", Secret: true},
 			{Key: "alipay.public_key", Label: "支付宝公钥", Type: "textarea", Secret: true},
-			{Key: "alipay.notify_url", Label: "异步通知地址", Type: "text"},
-			{Key: "alipay.return_url", Label: "同步跳转地址", Type: "text"},
-			{Key: "alipay.sandbox", Label: "沙箱环境", Type: "bool", Default: "false"},
+			{
+				Key:         "alipay.subscription_url",
+				Label:       "默认订阅源地址",
+				Type:        "text",
+				Placeholder: "https://你的订阅服务.example/profile.yaml",
+			},
 		},
 	},
 }
@@ -104,10 +120,6 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		value = strings.TrimSpace(value)
-		if field.Type == "bool" && value != "true" && value != "false" {
-			fail(w, http.StatusBadRequest, fmt.Sprintf("%s 只能是 true 或 false", field.Label))
-			return
-		}
 		// 密钥类字段留空表示保持原值
 		if field.Secret && value == "" {
 			continue
