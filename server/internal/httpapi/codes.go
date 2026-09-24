@@ -77,6 +77,7 @@ func (s *Server) handleGenerateCodes(w http.ResponseWriter, r *http.Request) {
 	}
 	note := strings.TrimSpace(req.Note)
 	plan := strings.TrimSpace(req.Plan)
+	subscriptionURL := strings.TrimSpace(req.SubscriptionURL)
 	if plan == "" {
 		plan = "极速版"
 	}
@@ -84,12 +85,16 @@ func (s *Server) handleGenerateCodes(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "套餐类型不合法")
 		return
 	}
+	if subscriptionURL == "" {
+		fail(w, http.StatusBadRequest, "请填写 3x-ui 订阅链接")
+		return
+	}
 	if utf8.RuneCountInString(note) > maxNoteLength {
 		fail(w, http.StatusBadRequest, "备注不能超过 100 字")
 		return
 	}
 
-	items, err := s.store.CreateCodesWithDetails(count, plan, strings.TrimSpace(req.SubscriptionURL), note)
+	items, err := s.store.CreateCodesWithDetails(count, plan, subscriptionURL, note)
 	if err != nil {
 		fail(w, http.StatusInternalServerError, "生成兑换码失败")
 		return
@@ -120,6 +125,8 @@ func (s *Server) handleUpdateCodeStatus(w http.ResponseWriter, r *http.Request) 
 		fail(w, http.StatusNotFound, "兑换码不存在")
 	case errors.Is(err, store.ErrCodeUsed):
 		fail(w, http.StatusBadRequest, "已使用的兑换码不能作废")
+	case errors.Is(err, store.ErrCodeReserved):
+		fail(w, http.StatusBadRequest, "待支付兑换码不能修改")
 	case err != nil:
 		fail(w, http.StatusInternalServerError, "更新兑换码失败")
 	default:
@@ -149,7 +156,7 @@ func codeViews(items []store.Code) []codeView {
 
 func validStatus(status string) bool {
 	switch status {
-	case store.StatusUnused, store.StatusUsed, store.StatusVoid:
+	case store.StatusUnused, store.StatusReserved, store.StatusUsed, store.StatusVoid:
 		return true
 	default:
 		return false

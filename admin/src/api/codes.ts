@@ -1,6 +1,6 @@
 import { http } from "@/utils/http";
 
-export type CodeStatus = "unused" | "used" | "void";
+export type CodeStatus = "unused" | "reserved" | "used" | "void";
 
 export type RedeemCode = {
   id: number;

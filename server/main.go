@@ -52,6 +52,25 @@ func main() {
 		Handler:           httpapi.New(cfg, db, adminFS),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	if err := db.ReleaseExpiredPaymentOrders(time.Now()); err != nil {
+		log.Printf("启动时释放过期支付预占失败: %v", err)
+	}
+	cleanupCtx, cancelCleanup := context.WithCancel(context.Background())
+	defer cancelCleanup()
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := db.ReleaseExpiredPaymentOrders(time.Now()); err != nil {
+					log.Printf("释放过期支付预占失败: %v", err)
+				}
+			case <-cleanupCtx.Done():
+				return
+			}
+		}
+	}()
 
 	go func() {
 		log.Printf("netx-server 已启动，监听 %s", cfg.Addr)

@@ -32,5 +32,5 @@ func (s *Server) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "兑换码兑换失败")
 		return
 	}
-	ok(w, map[string]any{"code": item.Code, "plan": item.Plan, "subscriptionUrl": item.SubscriptionURL, "accessPath": "/access/" + item.Code})
+	ok(w, map[string]string{"accessPath": "/access/" + item.Code})
 }

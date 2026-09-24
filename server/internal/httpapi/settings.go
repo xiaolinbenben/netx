@@ -51,12 +51,6 @@ var settingsSchema = []settingGroup{
 			},
 			{Key: "alipay.private_key", Label: "应用私钥", Type: "textarea", Secret: true},
 			{Key: "alipay.public_key", Label: "支付宝公钥", Type: "textarea", Secret: true},
-			{
-				Key:         "alipay.subscription_url",
-				Label:       "默认订阅源地址",
-				Type:        "text",
-				Placeholder: "https://你的订阅服务.example/profile.yaml",
-			},
 		},
 	},
 }

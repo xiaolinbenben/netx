@@ -189,8 +189,9 @@ func TestGenerateAndListCodes(t *testing.T) {
 	pattern := regexp.MustCompile(`^[0-9a-z]{16}$`)
 
 	recorder, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count": 5,
-		"note":  "首批",
+		"count":           5,
+		"note":            "首批",
+		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("生成兑换码应返回 200，实际 %d: %s", recorder.Code, recorder.Body.String())
@@ -217,6 +218,9 @@ func TestGenerateAndListCodes(t *testing.T) {
 	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 0}, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("数量为 0 应返回 400，实际 %d", recorder.Code)
 	}
+	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 1}, env.token); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("缺少 3x-ui 订阅链接应返回 400，实际 %d", recorder.Code)
+	}
 	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 201}, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("数量为 201 应返回 400，实际 %d", recorder.Code)
 	}
@@ -228,8 +232,9 @@ func TestGenerateAndListCodes(t *testing.T) {
 	}
 
 	_, payload = env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count": 3,
-		"note":  "第二批",
+		"count":           3,
+		"note":            "第二批",
+		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
 
 	_, list := env.do(t, http.MethodGet, "/api/admin/codes?page=1&size=2", nil, env.token)
@@ -254,8 +259,9 @@ func TestVoidAndRestoreCode(t *testing.T) {
 	env := newTestEnv(t)
 
 	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count": 2,
-		"note":  "",
+		"count":           2,
+		"note":            "",
+		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
 	items := itemsOf(t, payload)
 	firstID := int64(items[0]["id"].(float64))
@@ -342,6 +348,9 @@ func TestSettingsReadWriteAndMask(t *testing.T) {
 	}
 	if fields["alipay.private_key"]["configured"] != false {
 		t.Fatalf("未配置的私钥 configured 应为 false，实际 %v", fields["alipay.private_key"]["configured"])
+	}
+	if _, exists := fields["alipay.subscription_url"]; exists {
+		t.Fatal("支付宝配置不应再包含全局订阅地址")
 	}
 
 	recorder, _ := env.do(t, http.MethodPut, "/api/admin/settings", map[string]any{
@@ -438,8 +447,12 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 		t.Fatalf("未兑换码不应提供订阅，实际 %d", recorder.Code)
 	}
 
-	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, ""); recorder.Code != http.StatusOK {
-		t.Fatalf("兑换应成功，实际 %d: %s", recorder.Code, recorder.Body.String())
+	redeemRecorder, redeemPayload := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, "")
+	if redeemRecorder.Code != http.StatusOK {
+		t.Fatalf("兑换应成功，实际 %d: %s", redeemRecorder.Code, redeemRecorder.Body.String())
+	}
+	if data, ok := redeemPayload["data"].(map[string]any); !ok || len(data) != 1 || data["accessPath"] == nil {
+		t.Fatalf("兑换响应只应返回访问路径，实际 %v", redeemPayload)
 	}
 	recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, "")
 	if recorder.Code != http.StatusOK {
@@ -458,12 +471,28 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 
 func TestPaymentOrderLifecycle(t *testing.T) {
 	env := newTestEnv(t)
-	order, err := env.db.CreatePaymentOrder("极速版", "https://upstream.example/profile.yaml", 50000)
+	created, err := env.db.CreateCodesWithDetails(1, "极速版", "https://upstream.example/profile.yaml", "库存")
+	if err != nil {
+		t.Fatalf("预生成兑换码失败: %v", err)
+	}
+	codeCountBefore, err := countCodes(env.db)
+	if err != nil {
+		t.Fatalf("统计兑换码失败: %v", err)
+	}
+	order, err := env.db.CreatePaymentOrder("极速版", 50000)
 	if err != nil {
 		t.Fatalf("创建支付订单失败: %v", err)
 	}
-	if order.Status != store.PaymentPending || order.Code == "" {
+	if order.Status != store.PaymentPending || order.Code != created[0].Code {
 		t.Fatalf("新订单状态或兑换码不正确: %+v", order)
+	}
+	codeCountAfter, err := countCodes(env.db)
+	if err != nil || codeCountAfter != codeCountBefore {
+		t.Fatalf("支付下单不应创建新兑换码: before=%d after=%d err=%v", codeCountBefore, codeCountAfter, err)
+	}
+	reserved, err := env.db.FindCode(order.Code)
+	if err != nil || reserved.Status != store.StatusReserved {
+		t.Fatalf("下单后兑换码应为 reserved: code=%+v err=%v", reserved, err)
 	}
 	paid, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000001", 50000)
 	if err != nil {
@@ -482,4 +511,62 @@ func TestPaymentOrderLifecycle(t *testing.T) {
 	if _, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000001", 1); err != store.ErrPaymentAmount {
 		t.Fatalf("金额不匹配应拒绝，实际 %v", err)
 	}
+}
+
+func TestPaymentInventoryByPlanAndExpiry(t *testing.T) {
+	env := newTestEnv(t)
+	if _, err := env.db.CreateCodesWithDetails(1, "至尊版", "https://upstream.example/profile.yaml", "库存"); err != nil {
+		t.Fatalf("预生成兑换码失败: %v", err)
+	}
+	var ordersBefore int
+	if err := env.db.QueryRow("SELECT COUNT(*) FROM payment_orders").Scan(&ordersBefore); err != nil {
+		t.Fatalf("统计支付订单失败: %v", err)
+	}
+	if _, err := env.db.CreatePaymentOrder("极速版", 50000); err != store.ErrPaymentOutOfStock {
+		t.Fatalf("无对应套餐库存应返回库存不足，实际 %v", err)
+	}
+	var ordersAfter int
+	if err := env.db.QueryRow("SELECT COUNT(*) FROM payment_orders").Scan(&ordersAfter); err != nil || ordersAfter != ordersBefore {
+		t.Fatalf("库存不足不应创建支付订单: before=%d after=%d err=%v", ordersBefore, ordersAfter, err)
+	}
+
+	codes, err := env.db.CreateCodesWithDetails(1, "极速版", "https://upstream.example/profile.yaml", "库存")
+	if err != nil {
+		t.Fatalf("预生成兑换码失败: %v", err)
+	}
+	order, err := env.db.CreatePaymentOrder("极速版", 50000)
+	if err != nil {
+		t.Fatalf("创建支付订单失败: %v", err)
+	}
+	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": order.Code}, ""); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("reserved 兑换码不应被手动兑换，实际 %d", recorder.Code)
+	}
+	reservedRow, err := env.db.FindCode(order.Code)
+	if err != nil {
+		t.Fatalf("读取预占兑换码失败: %v", err)
+	}
+	reservedPath := "/api/admin/codes/" + strconv.FormatInt(reservedRow.ID, 10)
+	if recorder, _ := env.do(t, http.MethodPatch, reservedPath, map[string]string{"status": "void"}, env.token); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("reserved 兑换码不应被后台修改，实际 %d", recorder.Code)
+	}
+	old := time.Now().Add(-store.PaymentReservationTTL - time.Minute).Unix()
+	if _, err := env.db.Exec("UPDATE payment_orders SET created_at = ? WHERE out_trade_no = ?", old, order.OutTradeNo); err != nil {
+		t.Fatalf("准备过期订单失败: %v", err)
+	}
+	if err := env.db.ReleaseExpiredPaymentOrders(time.Now()); err != nil {
+		t.Fatalf("释放过期订单失败: %v", err)
+	}
+	released, err := env.db.FindCode(codes[0].Code)
+	if err != nil || released.Status != store.StatusUnused {
+		t.Fatalf("过期订单应释放兑换码: code=%+v err=%v", released, err)
+	}
+	if _, err := env.db.MarkPaymentPaid(order.OutTradeNo, "2026092400000000002", 50000); err != store.ErrPaymentState {
+		t.Fatalf("过期订单不应再支付成功，实际 %v", err)
+	}
+}
+
+func countCodes(db *store.DB) (int, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM codes").Scan(&count)
+	return count, err
 }

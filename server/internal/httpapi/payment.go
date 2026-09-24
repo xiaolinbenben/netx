@@ -52,12 +52,11 @@ func (s *Server) handleCreateAlipayPayment(w http.ResponseWriter, r *http.Reques
 		fail(w, http.StatusServiceUnavailable, err.Error())
 		return
 	}
-	if strings.TrimSpace(config.SubscriptionURL) == "" {
-		fail(w, http.StatusServiceUnavailable, "请先在管理端配置默认订阅源地址")
+	order, err := s.store.CreatePaymentOrder(req.Plan, amountFen)
+	if errors.Is(err, store.ErrPaymentOutOfStock) {
+		fail(w, http.StatusConflict, "该套餐暂无可用库存")
 		return
 	}
-
-	order, err := s.store.CreatePaymentOrder(req.Plan, config.SubscriptionURL, amountFen)
 	if err != nil {
 		fail(w, http.StatusInternalServerError, "创建支付订单失败")
 		return
@@ -112,12 +111,11 @@ func (s *Server) handleAlipayNotify(w http.ResponseWriter, r *http.Request) {
 }
 
 type alipayConfig struct {
-	AppID           string
-	Gateway         string
-	PrivateKey      *rsa.PrivateKey
-	PublicKey       *rsa.PublicKey
-	RootURL         string
-	SubscriptionURL string
+	AppID      string
+	Gateway    string
+	PrivateKey *rsa.PrivateKey
+	PublicKey  *rsa.PublicKey
+	RootURL    string
 }
 
 func alipayConfigFromSettings(settings map[string]string) (alipayConfig, error) {
@@ -136,8 +134,7 @@ func alipayConfigFromSettings(settings map[string]string) (alipayConfig, error) 
 	config := alipayConfig{
 		AppID: appID, Gateway: strings.TrimSpace(settings["alipay.gateway"]),
 		PrivateKey: privateKey, PublicKey: publicKey,
-		RootURL:         strings.TrimRight(strings.TrimSpace(settings["app.base_url"]), "/"),
-		SubscriptionURL: strings.TrimSpace(settings["alipay.subscription_url"]),
+		RootURL: strings.TrimRight(strings.TrimSpace(settings["app.base_url"]), "/"),
 	}
 	if config.RootURL == "" {
 		config.RootURL = defaultAppBaseURL

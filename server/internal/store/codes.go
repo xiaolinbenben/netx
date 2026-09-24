@@ -11,14 +11,16 @@ import (
 
 // 兑换码状态
 const (
-	StatusUnused = "unused"
-	StatusUsed   = "used"
-	StatusVoid   = "void"
+	StatusUnused   = "unused"
+	StatusReserved = "reserved"
+	StatusUsed     = "used"
+	StatusVoid     = "void"
 )
 
 var (
 	ErrCodeNotFound = errors.New("兑换码不存在")
 	ErrCodeUsed     = errors.New("已使用的兑换码不能修改")
+	ErrCodeReserved = errors.New("待支付兑换码不能修改")
 )
 
 // 兑换码只使用小写数字和字母，便于直接放入 URL 和文件名。
@@ -107,11 +109,6 @@ func NewCode() (string, error) {
 		}
 	}
 	return string(code), nil
-}
-
-// CreateCodes 批量生成兑换码，返回本次创建的记录。
-func (d *DB) CreateCodes(count int, note string) ([]Code, error) {
-	return d.CreateCodesWithDetails(count, "极速版", "", note)
 }
 
 func (d *DB) CreateCodesWithDetails(count int, plan, subscriptionURL, note string) ([]Code, error) {
@@ -235,6 +232,9 @@ func (d *DB) UpdateCodeStatus(id int64, status string) error {
 	}
 	if current == StatusUsed {
 		return ErrCodeUsed
+	}
+	if current == StatusReserved {
+		return ErrCodeReserved
 	}
 	if current == status {
 		return nil

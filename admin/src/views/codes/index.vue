@@ -18,15 +18,17 @@ defineOptions({
 const statusOptions = [
   { label: "全部", value: "" },
   { label: "未使用", value: "unused" },
+  { label: "待支付", value: "reserved" },
   { label: "已使用", value: "used" },
   { label: "已作废", value: "void" }
 ];
 
 const statusMeta: Record<
   CodeStatus,
-  { text: string; type: "success" | "info" | "danger" }
+  { text: string; type: "success" | "info" | "warning" | "danger" }
 > = {
   unused: { text: "未使用", type: "success" },
+  reserved: { text: "待支付", type: "warning" },
   used: { text: "已使用", type: "info" },
   void: { text: "已作废", type: "danger" }
 };
@@ -242,7 +244,7 @@ onMounted(fetchCodes);
             <el-option label="至尊版" value="至尊版" />
           </el-select>
         </el-form-item>
-        <el-form-item label="3x-ui 订阅">
+        <el-form-item label="3x-ui 订阅" required>
           <el-input v-model="generateForm.subscriptionUrl" placeholder="粘贴订阅链接" />
         </el-form-item>
         <el-form-item label="备注">
