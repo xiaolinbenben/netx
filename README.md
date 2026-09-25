@@ -40,7 +40,7 @@ npm run dev
 docker compose --project-name netx-local --file deploy/docker-compose.yml down
 ```
 
-生产环境使用一个 Go 服务容器，镜像发布为 `netx:server-<版本>`。外部 HTTPS 反向代理（如服务器已有）只需要转发到该容器的 `8000` 端口。
+生产环境使用一个 Go 服务容器，镜像固定为 `beisitech/netx:latest`。CI 同时发布 Git commit SHA 标签，回滚时将服务器上的 `deploy/docker-compose.yml` 中的 `latest` 改为对应 SHA，再重新执行 Compose。外部 HTTPS 反向代理（如服务器已有）只需要转发到该容器的 `8000` 端口。
 
 推送 `main` 后，[GitHub Actions](.github/workflows/deploy.yml) 会构建 `linux/amd64` 镜像，推送 `latest` 和 Git commit SHA 两种标签，再通过 SSH 将 [Compose 配置](deploy/docker-compose.yml) 部署到服务器的 `/opt/netx/deploy`。
 
@@ -48,7 +48,6 @@ Docker Hub 需要新建一个名为 `netx` 的公共仓库，并创建具有 Rea
 
 | Secret                 | 说明                                                                  |
 | ---------------------- | --------------------------------------------------------------------- |
-| `DOCKERHUB_USERNAME` | Docker Hub 用户名                                                     |
 | `DOCKERHUB_TOKEN`    | Docker Hub Access Token，用于 GitHub Actions 推送镜像，不使用账号密码 |
 
 再创建名为 `production` 的 GitHub Environment，并在其中配置部署 Secrets：

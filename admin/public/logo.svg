@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
-  <rect width="64" height="64" rx="14" fill="#07100C" />
-  <path
-    d="M20 44V20h6l12 15V20h6v24h-6L26 29v15z"
-    fill="#68FF9A"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">NetX</title>
+  <rect width="64" height="64" fill="#07100c"/>
+  <rect x="8" y="8" width="48" height="48" fill="none" stroke="#68ff9a" stroke-width="1.5"/>
+  <text x="32" y="38" fill="#68ff9a" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="18" font-weight="700" text-anchor="middle">NX</text>
 </svg>

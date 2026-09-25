@@ -20,7 +20,7 @@ WORKDIR /src/server
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 COPY server/ ./
-COPY landing/index.html landing/weixin.jpg ./web/dist/
+COPY landing/index.html landing/netx-mark.png landing/favicon.ico landing/weixin.jpg ./web/dist/
 COPY --from=admin-builder /src/server/web/dist/admin ./web/dist/admin
 COPY --from=dashboard-builder /src/server/web/dist/dashboard ./web/dist/dashboard
 RUN go test ./... && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/netx-server .

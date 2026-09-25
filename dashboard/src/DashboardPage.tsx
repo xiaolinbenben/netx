@@ -46,7 +46,7 @@ export default function DashboardPage() {
   }
 
   return <main className="dashboard-shell home-shell">
-    <header className="topbar"><a className="brand" href="/dashboard"><span className="brand-mark">NX</span><span>NetX 网络服务中心</span></a></header>
+    <header className="topbar"><a className="brand" href="/dashboard"><img className="brand-mark" src="/dashboard/netx-mark.png" alt="NetX" /><span>NetX 网络服务中心</span></a></header>
     <section className="section-heading" id="plans"><div><p className="eyebrow">01 / PLANS</p><h2>选择你的 AI 专线</h2></div></section>
     <section className="plans-grid" aria-label="套餐选择">{plans.map((plan) => <article className={`plan-card ${plan.accent}`} key={plan.id}><div className="plan-top"><div><span className="plan-tag">{plan.tag}</span><h3>{plan.id}</h3></div><span className="plan-symbol">{plan.accent === "gold" ? "♛" : "ϟ"}</span></div><p className="plan-description">{plan.description}</p><div className="plan-price"><span>¥</span>{plan.price}<small>/ 年</small></div><ul>{plan.features.map((feature) => <li key={feature}><span>+</span>{feature}</li>)}</ul><button className="plan-button" disabled={buying !== ""} onClick={() => buy(plan.id)}>{buying === plan.id ? "正在创建订单" : `购买 ${plan.id}`}<span>→</span></button></article>)}</section>
     <section className="redeem-strip"><div><p className="eyebrow">02 / ACTIVATE</p><h2>已有卡密？立即兑换</h2><p>兑换后获得专属套餐。</p></div><button className="outline-button" onClick={() => setRedeemOpen(true)}>输入兑换码 <span>→</span></button></section>

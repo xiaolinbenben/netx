@@ -56,7 +56,7 @@ a { color: inherit; text-decoration: none; }
 
 .brand, .topbar-meta, .next-step, .footer, .system-list div { display: flex; align-items: center; }
 .brand { gap: 11px; font-size: 20px; font-weight: 800; letter-spacing: 0.02em; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--green); color: var(--green); font-family: monospace; font-size: 11px; box-shadow: 0 0 22px rgba(104, 255, 154, 0.22); }
+.brand-mark { display: block; width: 34px; height: 34px; box-shadow: 0 0 22px rgba(104, 255, 154, 0.22); }
 .topbar-meta { gap: 9px; color: var(--muted); font-size: 13px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
 

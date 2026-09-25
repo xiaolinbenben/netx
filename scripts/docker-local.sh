@@ -5,8 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/deploy/docker-compose.yml"
 ENV_FILE="${NETX_ENV_FILE:-$ROOT_DIR/deploy/.env}"
 PROJECT_NAME="netx-local"
-IMAGE_NAMESPACE="netx-local"
-IMAGE_TAG="local"
+IMAGE_NAME="beisitech/netx:latest"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "错误：未找到 Docker，请先安装并启动 Docker Desktop。" >&2
@@ -34,10 +33,8 @@ fi
 : "${ADMIN_PASSWORD:=admin123456}"
 : "${JWT_SECRET:=netx-local-development-secret}"
 export ADMIN_USERNAME ADMIN_PASSWORD JWT_SECRET
-export DOCKERHUB_USERNAME="$IMAGE_NAMESPACE" IMAGE_TAG
-
 echo "[1/2] 构建 Go 服务镜像（包含落地页、React 用户端和 Ant Design Pro 管理端）..."
-docker build -f "$ROOT_DIR/server/Dockerfile" -t "$IMAGE_NAMESPACE/netx:server-$IMAGE_TAG" "$ROOT_DIR"
+docker build -f "$ROOT_DIR/server/Dockerfile" -t "$IMAGE_NAME" "$ROOT_DIR"
 
 echo "[2/2] 启动本地服务..."
 docker compose \

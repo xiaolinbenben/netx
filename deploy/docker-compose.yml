@@ -2,7 +2,7 @@ name: netx
 
 services:
   server:
-    image: ${DOCKERHUB_USERNAME}/netx:server-${IMAGE_TAG}
+    image: beisitech/netx:latest
     restart: unless-stopped
     ports:
       - "8000:8000"
