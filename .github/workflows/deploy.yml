@@ -14,21 +14,8 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.component }}
+    name: Build server
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - component: server
-            context: .
-            dockerfile: server/Dockerfile
-          - component: dashboard
-            context: dashboard
-            dockerfile: dashboard/Dockerfile
-          - component: main
-            context: landing
-            dockerfile: landing/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -41,15 +28,15 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: .
+          file: server/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/netx:${{ matrix.component }}-latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/netx:${{ matrix.component }}-${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/netx:server-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/netx:server-${{ github.sha }}
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,mode=max,scope=server
 
   deploy:
     name: Deploy production

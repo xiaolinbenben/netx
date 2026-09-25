@@ -111,23 +111,19 @@ func NewCode() (string, error) {
 	return string(code), nil
 }
 
-func (d *DB) CreateCodesWithDetails(count int, plan, subscriptionURL, note string) ([]Code, error) {
+func (d *DB) CreateCodeWithDetails(plan, subscriptionURL, note string) (Code, error) {
 	tx, err := d.Begin()
 	if err != nil {
-		return nil, err
+		return Code{}, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	created := make([]Code, 0, count)
-	for i := 0; i < count; i++ {
-		code, err := insertCode(tx, plan, subscriptionURL, note)
-		if err != nil {
-			return nil, err
-		}
-		created = append(created, code)
+	created, err := insertCode(tx, plan, subscriptionURL, note)
+	if err != nil {
+		return Code{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return Code{}, err
 	}
 	return created, nil
 }

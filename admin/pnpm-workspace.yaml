@@ -1,5 +1,0 @@
-# pnpm 11 依赖构建脚本白名单（esbuild 等需要执行安装脚本）
-allowBuilds:
-  "@parcel/watcher": true
-  esbuild: true
-  vue-demi: true

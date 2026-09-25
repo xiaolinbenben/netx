@@ -18,16 +18,16 @@ type Server struct {
 	cfg     config.Config
 	store   *store.DB
 	auth    *auth.Manager
-	adminFS fs.FS
+	webFS   fs.FS
 }
 
-// New 组装全部路由：/api 提供接口，/admin 提供内嵌的管理端静态资源。
-func New(cfg config.Config, db *store.DB, adminFS fs.FS) http.Handler {
+// New 组装 API、订阅和由 Go 托管的三个前端入口。
+func New(cfg config.Config, db *store.DB, webFS fs.FS) http.Handler {
 	server := &Server{
 		cfg:     cfg,
 		store:   db,
 		auth:    auth.NewManager(cfg.JWTSecret),
-		adminFS: adminFS,
+		webFS:   webFS,
 	}
 
 	mux := http.NewServeMux()
@@ -41,28 +41,30 @@ func New(cfg config.Config, db *store.DB, adminFS fs.FS) http.Handler {
 	mux.HandleFunc("POST /api/payment/alipay/create", server.handleCreateAlipayPayment)
 	mux.HandleFunc("POST /api/payment/alipay/notify", server.handleAlipayNotify)
 	mux.HandleFunc("POST /api/redeem", server.handleRedeem)
+	mux.HandleFunc("GET /api/subscription/{code}/usage", server.handleSubscriptionUsage)
 	mux.HandleFunc("GET /sub/{code}", server.handleSubscription)
-	mux.Handle("GET /admin/", server.adminHandler())
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.Handle("GET /", server.staticHandler())
 
 	return logAPIRequests(mux)
 }
 
-// adminHandler 提供管理端静态资源，未命中文件时回落到入口页，交给前端路由处理。
-func (s *Server) adminHandler() http.Handler {
+// staticHandler 按公开路径选择静态前端，并把前端路由回落到对应入口页。
+func (s *Server) staticHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := strings.TrimPrefix(r.URL.Path, "/admin/")
-		if name == "" {
-			name = "index.html"
+		urlPrefix, fsPrefix, entry := staticTarget(r.URL.Path)
+		name := strings.TrimPrefix(r.URL.Path, urlPrefix)
+		if name == "" || name == "/" || strings.HasPrefix(name, ".") {
+			name = entry
+		} else {
+			name = strings.TrimPrefix(name, "/")
 		}
-		if strings.HasPrefix(name, ".") {
-			name = "index.html"
+		if info, err := fs.Stat(s.webFS, path.Join(fsPrefix, name)); err != nil || info.IsDir() {
+			name = entry
 		}
-		if info, err := fs.Stat(s.adminFS, name); err != nil || info.IsDir() {
-			name = "index.html"
-		}
-		content, err := fs.ReadFile(s.adminFS, name)
+		content, err := fs.ReadFile(s.webFS, path.Join(fsPrefix, name))
 		if err != nil {
-			fail(w, http.StatusNotFound, "管理端静态资源不存在，请先执行 pnpm build 重新构建后端")
+			fail(w, http.StatusNotFound, "前端静态资源不存在，请先执行前端构建")
 			return
 		}
 		if name == "index.html" {
@@ -77,6 +79,21 @@ func (s *Server) adminHandler() http.Handler {
 		}
 		_, _ = w.Write(content)
 	})
+}
+
+func staticTarget(requestPath string) (string, string, string) {
+	switch {
+	case strings.HasPrefix(requestPath, "/dashboard/access/"):
+		return "/dashboard/access", "dashboard/access", "index.html"
+	case strings.HasPrefix(requestPath, "/admin/") || requestPath == "/admin":
+		return "/admin", "admin", "index.html"
+	case strings.HasPrefix(requestPath, "/dashboard/") || requestPath == "/dashboard":
+		return "/dashboard", "dashboard", "index.html"
+	case strings.HasPrefix(requestPath, "/access/") || requestPath == "/access":
+		return "/access", "dashboard/access", "index.html"
+	default:
+		return "", ".", "index.html"
+	}
 }
 
 type statusRecorder struct {

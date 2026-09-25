@@ -18,7 +18,7 @@ import (
 )
 
 //go:embed all:web/dist
-var adminAssets embed.FS
+var webAssets embed.FS
 
 //go:embed migrations/*.sql
 var migrations embed.FS
@@ -39,17 +39,17 @@ func main() {
 		log.Fatalf("执行数据库迁移失败: %v", err)
 	}
 
-	adminFS, err := fs.Sub(adminAssets, "web/dist")
+	webFS, err := fs.Sub(webAssets, "web/dist")
 	if err != nil {
-		log.Fatalf("读取管理端静态资源失败: %v", err)
+		log.Fatalf("读取前端静态资源失败: %v", err)
 	}
-	if _, err := fs.Stat(adminFS, "index.html"); err != nil {
-		log.Print("提示：未检测到管理端构建产物，/admin 将不可用，请先执行 pnpm build")
+	if _, err := fs.Stat(webFS, "index.html"); err != nil {
+		log.Print("提示：未检测到落地页构建产物，请先执行前端构建")
 	}
 
 	server := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           httpapi.New(cfg, db, adminFS),
+		Handler:           httpapi.New(cfg, db, webFS),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	if err := db.ReleaseExpiredPaymentOrders(time.Now()); err != nil {

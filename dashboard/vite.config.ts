@@ -6,21 +6,23 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.VITE_API_TARGET || "http://localhost:8000";
 
   return {
-    base: "/admin/",
+    base: "/dashboard",
     plugins: [react()],
     server: {
-      port: 5173,
+      port: 3000,
       host: "0.0.0.0",
-      proxy: { "/api": apiTarget },
+      proxy: {
+        "/api": apiTarget,
+        "/sub": apiTarget,
+      },
     },
     build: {
-      outDir: "../server/web/dist/admin",
+      outDir: "../server/web/dist/dashboard",
       emptyOutDir: true,
       rollupOptions: {
-        output: {
-          entryFileNames: "static/js/[name]-[hash].js",
-          chunkFileNames: "static/js/[name]-[hash].js",
-          assetFileNames: "static/[ext]/[name]-[hash].[ext]",
+        input: {
+          index: "index.html",
+          access: "access/index.html",
         },
       },
     },

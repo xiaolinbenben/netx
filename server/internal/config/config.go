@@ -18,7 +18,7 @@ type Config struct {
 // Load 读取环境变量并校验必填项。
 func Load() (Config, error) {
 	cfg := Config{
-		Addr:          ":" + strings.TrimPrefix(env("PORT", "8080"), ":"),
+		Addr:          ":" + strings.TrimPrefix(env("PORT", "8000"), ":"),
 		DBPath:        env("DB_PATH", "./data/netx.db"),
 		AdminUsername: os.Getenv("ADMIN_USERNAME"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),

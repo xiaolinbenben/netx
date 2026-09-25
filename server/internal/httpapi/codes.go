@@ -59,20 +59,11 @@ func (s *Server) handleListCodes(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGenerateCodes(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Count           *int   `json:"count"`
 		Note            string `json:"note"`
 		Plan            string `json:"plan"`
 		SubscriptionURL string `json:"subscriptionUrl"`
 	}
 	if !decodeJSON(w, r, &req) {
-		return
-	}
-	count := 1
-	if req.Count != nil {
-		count = *req.Count
-	}
-	if count < 1 || count > maxPageSize {
-		fail(w, http.StatusBadRequest, "单次生成数量需在 1-200 之间")
 		return
 	}
 	note := strings.TrimSpace(req.Note)
@@ -94,12 +85,12 @@ func (s *Server) handleGenerateCodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := s.store.CreateCodesWithDetails(count, plan, subscriptionURL, note)
+	item, err := s.store.CreateCodeWithDetails(plan, subscriptionURL, note)
 	if err != nil {
 		fail(w, http.StatusInternalServerError, "生成兑换码失败")
 		return
 	}
-	ok(w, map[string]any{"items": codeViews(items)})
+	ok(w, map[string]any{"items": codeViews([]store.Code{item})})
 }
 
 func (s *Server) handleUpdateCodeStatus(w http.ResponseWriter, r *http.Request) {

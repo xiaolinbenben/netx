@@ -1,19 +1,28 @@
-.PHONY: admin-install admin-dev admin-build server-dev server-build test build
+.PHONY: admin-install admin-dev admin-build dashboard-install dashboard-dev dashboard-build server-dev server-build test build
 
-# 安装管理端依赖
+# 安装 React + Ant Design Pro 管理端依赖
 admin-install:
-	cd admin && pnpm install
+	cd admin && npm install
 
 # 管理端开发服务（http://localhost:5173/admin/，需要同时启动 server-dev）
 admin-dev:
-	cd admin && pnpm dev
+	cd admin && npm run dev
 
-# 构建管理端，产物输出到 server/web/dist（构建会清空目录，补回占位文件保证 go build 可用）
+# 构建管理端，产物输出到 server/web/dist/admin
 admin-build:
-	cd admin && pnpm build
-	@touch server/web/dist/.gitkeep
+	cd admin && npm run build
 
-# 后端开发服务（http://localhost:8080）
+# 构建用户端，产物输出到 server/web/dist/dashboard
+dashboard-install:
+	cd dashboard && npm install
+
+dashboard-dev:
+	cd dashboard && npm run dev
+
+dashboard-build:
+	cd dashboard && npm run build
+
+# 后端开发服务（http://localhost:8000）
 server-dev:
 	cd server && set -a && . ./.env && set +a && go run .
 
@@ -22,7 +31,7 @@ test:
 	cd server && go test ./...
 
 # 构建包含管理端静态资源的后端单文件
-server-build: admin-build
+server-build: admin-build dashboard-build
 	cd server && go build -o bin/netx-server .
 
 # 完整构建

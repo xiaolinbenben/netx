@@ -1,59 +1,23 @@
 name: netx
 
 services:
-  main:
-    image: ${DOCKERHUB_USERNAME}/netx:main-${IMAGE_TAG}
-    restart: unless-stopped
-    ports:
-      - "8000:80"
-    networks:
-      - internal
-    depends_on:
-      dashboard:
-        condition: service_healthy
-      server:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
-  dashboard:
-    image: ${DOCKERHUB_USERNAME}/netx:dashboard-${IMAGE_TAG}
-    restart: unless-stopped
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/dashboard/api/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 6
-      start_period: 10s
-
   server:
     image: ${DOCKERHUB_USERNAME}/netx:server-${IMAGE_TAG}
     restart: unless-stopped
-    networks:
-      - internal
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     environment:
-      PORT: "8080"
+      PORT: "8000"
       DB_PATH: /data/netx.db
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     volumes:
       - server-data:/data
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/admin/"]
-      interval: 10s
-      timeout: 3s
-      retries: 6
-      start_period: 10s
-
 volumes:
   server-data:
-
-networks:
-  internal:
-    driver: bridge

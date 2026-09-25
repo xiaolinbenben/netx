@@ -52,11 +52,14 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatalf("执行迁移失败: %v", err)
 	}
 
-	adminFS := fstest.MapFS{
-		"index.html": &fstest.MapFile{Data: []byte("<html>netx admin</html>")},
+	webFS := fstest.MapFS{
+		"index.html":                  &fstest.MapFile{Data: []byte("<html>netx landing</html>")},
+		"admin/index.html":            &fstest.MapFile{Data: []byte("<html>netx admin</html>")},
+		"dashboard/index.html":        &fstest.MapFile{Data: []byte("<html>netx dashboard</html>")},
+		"dashboard/access/index.html": &fstest.MapFile{Data: []byte("<html>netx access</html>")},
 	}
 	return &testEnv{
-		handler: httpapi.New(cfg, db, adminFS),
+		handler: httpapi.New(cfg, db, webFS),
 		db:      db,
 		token:   issueToken(t, cfg),
 	}
@@ -189,7 +192,6 @@ func TestGenerateAndListCodes(t *testing.T) {
 	pattern := regexp.MustCompile(`^[0-9a-z]{16}$`)
 
 	recorder, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count":           5,
 		"note":            "首批",
 		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
@@ -197,8 +199,8 @@ func TestGenerateAndListCodes(t *testing.T) {
 		t.Fatalf("生成兑换码应返回 200，实际 %d: %s", recorder.Code, recorder.Body.String())
 	}
 	generated := itemsOf(t, payload)
-	if len(generated) != 5 {
-		t.Fatalf("应生成 5 个兑换码，实际 %d", len(generated))
+	if len(generated) != 1 {
+		t.Fatalf("一次只能生成 1 个兑换码，实际 %d", len(generated))
 	}
 	seen := map[string]bool{}
 	for _, item := range generated {
@@ -215,39 +217,31 @@ func TestGenerateAndListCodes(t *testing.T) {
 		}
 	}
 
-	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 0}, env.token); recorder.Code != http.StatusBadRequest {
-		t.Fatalf("数量为 0 应返回 400，实际 %d", recorder.Code)
-	}
-	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 1}, env.token); recorder.Code != http.StatusBadRequest {
+	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{}, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("缺少 3x-ui 订阅链接应返回 400，实际 %d", recorder.Code)
 	}
-	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{"count": 201}, env.token); recorder.Code != http.StatusBadRequest {
-		t.Fatalf("数量为 201 应返回 400，实际 %d", recorder.Code)
-	}
 	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count": 1,
-		"note":  strings.Repeat("长", 101),
+		"note": strings.Repeat("长", 101),
 	}, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("备注超长应返回 400，实际 %d", recorder.Code)
 	}
 
 	_, payload = env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count":           3,
 		"note":            "第二批",
 		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
 
 	_, list := env.do(t, http.MethodGet, "/api/admin/codes?page=1&size=2", nil, env.token)
-	if total := totalOf(t, list); total != 8 {
-		t.Fatalf("总数应为 8，实际 %d", total)
+	if total := totalOf(t, list); total != 2 {
+		t.Fatalf("总数应为 2，实际 %d", total)
 	}
 	if len(itemsOf(t, list)) != 2 {
 		t.Fatalf("分页 size=2 应返回 2 条，实际 %d", len(itemsOf(t, list)))
 	}
 
 	_, filtered := env.do(t, http.MethodGet, "/api/admin/codes?keyword=第二批", nil, env.token)
-	if total := totalOf(t, filtered); total != 3 {
-		t.Fatalf("按备注筛选应为 3，实际 %d", total)
+	if total := totalOf(t, filtered); total != 1 {
+		t.Fatalf("按备注筛选应为 1，实际 %d", total)
 	}
 
 	if recorder, _ := env.do(t, http.MethodGet, "/api/admin/codes?status=unknown", nil, env.token); recorder.Code != http.StatusBadRequest {
@@ -259,13 +253,16 @@ func TestVoidAndRestoreCode(t *testing.T) {
 	env := newTestEnv(t)
 
 	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
-		"count":           2,
 		"note":            "",
 		"subscriptionUrl": "https://upstream.example/profile.yaml",
 	}, env.token)
 	items := itemsOf(t, payload)
 	firstID := int64(items[0]["id"].(float64))
-	secondID := int64(items[1]["id"].(float64))
+	_, secondPayload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"note":            "",
+		"subscriptionUrl": "https://upstream.example/profile.yaml",
+	}, env.token)
+	secondID := int64(itemsOf(t, secondPayload)[0]["id"].(float64))
 
 	path := "/api/admin/codes/" + strconv.FormatInt(firstID, 10)
 	if recorder, _ := env.do(t, http.MethodPatch, path, map[string]string{"status": "void"}, env.token); recorder.Code != http.StatusOK {
@@ -464,14 +461,95 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	if got := recorder.Header().Get("Content-Disposition"); got != "attachment; filename="+code+".yaml" {
 		t.Fatalf("订阅文件名不正确: %s", got)
 	}
-	if got := recorder.Body.String(); got != "proxies:\n  - name: test\n" {
-		t.Fatalf("订阅内容不正确: %s", got)
+	body := recorder.Body.String()
+	for _, expected := range []string{
+		"proxies:",
+		"name: test",
+		"proxy-groups:",
+		"name: PROXY",
+		"- test",
+		"- DIRECT",
+		"rule-providers:",
+		"private:",
+		"rules:",
+		"DOMAIN-SUFFIX,openai.com,PROXY",
+		"MATCH,PROXY",
+	} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("订阅内容缺少 %q: %s", expected, body)
+		}
+	}
+}
+
+func TestSubscriptionUsageReadsUserinfoHeader(t *testing.T) {
+	expire := time.Now().Add(49 * time.Hour).Unix()
+	userinfo := "upload=1073741824; download=2147483648; total=10737418240; expire=" + strconv.FormatInt(expire, 10)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/yaml")
+		w.Header().Set("Subscription-Userinfo", userinfo)
+		_, _ = w.Write([]byte("proxies:\n  - name: test\n"))
+	}))
+	defer upstream.Close()
+
+	env := newTestEnv(t)
+	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"subscriptionUrl": upstream.URL + "/profile.yaml",
+	}, env.token)
+	code := itemsOf(t, payload)[0]["code"].(string)
+	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, ""); recorder.Code != http.StatusOK {
+		t.Fatalf("兑换应成功，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+
+	recorder, response := env.do(t, http.MethodGet, "/api/subscription/"+code+"/usage", nil, "")
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("用量接口应返回 200，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+	data := response["data"].(map[string]any)
+	if data["usedBytes"] != float64(3*1024*1024*1024) || data["totalBytes"] != float64(10*1024*1024*1024) {
+		t.Fatalf("用量计算不正确: %v", data)
+	}
+	if data["unlimitedTotal"] != false || data["unlimitedTime"] != false {
+		t.Fatalf("有限额订阅不应标记为无限制: %v", data)
+	}
+	remainingDays := data["remainingDays"].(float64)
+	if remainingDays < 2 || remainingDays > 3 {
+		t.Fatalf("剩余天数应约为 2-3 天，实际 %v", remainingDays)
+	}
+
+	if recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, ""); recorder.Header().Get("Subscription-Userinfo") != userinfo {
+		t.Fatalf("订阅代理应透传用量头，实际 %q", recorder.Header().Get("Subscription-Userinfo"))
+	}
+}
+
+func TestSubscriptionUsageSupportsUnlimitedValues(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Subscription-Userinfo", "upload=9671737; download=1145873032; total=0; expire=0")
+		_, _ = w.Write([]byte("proxies: []\n"))
+	}))
+	defer upstream.Close()
+
+	env := newTestEnv(t)
+	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"subscriptionUrl": upstream.URL,
+	}, env.token)
+	code := itemsOf(t, payload)[0]["code"].(string)
+	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, ""); recorder.Code != http.StatusOK {
+		t.Fatalf("兑换应成功，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+
+	recorder, response := env.do(t, http.MethodGet, "/api/subscription/"+code+"/usage", nil, "")
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("无限制用量接口应返回 200，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+	data := response["data"].(map[string]any)
+	if data["unlimitedTotal"] != true || data["unlimitedTime"] != true || data["remainingDays"] != float64(0) {
+		t.Fatalf("无限制数据不正确: %v", data)
 	}
 }
 
 func TestPaymentOrderLifecycle(t *testing.T) {
 	env := newTestEnv(t)
-	created, err := env.db.CreateCodesWithDetails(1, "极速版", "https://upstream.example/profile.yaml", "库存")
+	created, err := env.db.CreateCodeWithDetails("极速版", "https://upstream.example/profile.yaml", "库存")
 	if err != nil {
 		t.Fatalf("预生成兑换码失败: %v", err)
 	}
@@ -483,7 +561,7 @@ func TestPaymentOrderLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("创建支付订单失败: %v", err)
 	}
-	if order.Status != store.PaymentPending || order.Code != created[0].Code {
+	if order.Status != store.PaymentPending || order.Code != created.Code {
 		t.Fatalf("新订单状态或兑换码不正确: %+v", order)
 	}
 	codeCountAfter, err := countCodes(env.db)
@@ -515,7 +593,7 @@ func TestPaymentOrderLifecycle(t *testing.T) {
 
 func TestPaymentInventoryByPlanAndExpiry(t *testing.T) {
 	env := newTestEnv(t)
-	if _, err := env.db.CreateCodesWithDetails(1, "至尊版", "https://upstream.example/profile.yaml", "库存"); err != nil {
+	if _, err := env.db.CreateCodeWithDetails("至尊版", "https://upstream.example/profile.yaml", "库存"); err != nil {
 		t.Fatalf("预生成兑换码失败: %v", err)
 	}
 	var ordersBefore int
@@ -530,10 +608,11 @@ func TestPaymentInventoryByPlanAndExpiry(t *testing.T) {
 		t.Fatalf("库存不足不应创建支付订单: before=%d after=%d err=%v", ordersBefore, ordersAfter, err)
 	}
 
-	codes, err := env.db.CreateCodesWithDetails(1, "极速版", "https://upstream.example/profile.yaml", "库存")
+	created, err := env.db.CreateCodeWithDetails("极速版", "https://upstream.example/profile.yaml", "库存")
 	if err != nil {
 		t.Fatalf("预生成兑换码失败: %v", err)
 	}
+	codes := []store.Code{created}
 	order, err := env.db.CreatePaymentOrder("极速版", 50000)
 	if err != nil {
 		t.Fatalf("创建支付订单失败: %v", err)
