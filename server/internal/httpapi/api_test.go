@@ -431,7 +431,7 @@ func TestAdminStaticFilesAndFallback(t *testing.T) {
 func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/yaml")
-		_, _ = w.Write([]byte("proxies:\n  - name: test\n"))
+		_, _ = w.Write([]byte("proxies:\n  - name: Los-netx|963.32GB\n"))
 	}))
 	defer upstream.Close()
 
@@ -464,10 +464,10 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	body := recorder.Body.String()
 	for _, expected := range []string{
 		"proxies:",
-		"name: test",
+		"name: Netx",
 		"proxy-groups:",
 		"name: PROXY",
-		"- test",
+		"- Netx",
 		"- DIRECT",
 		"rule-providers:",
 		"private:",
@@ -478,6 +478,9 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("订阅内容缺少 %q: %s", expected, body)
 		}
+	}
+	if strings.Contains(body, "Los-netx|963.32GB") {
+		t.Fatalf("订阅内容不应保留上游节点名称: %s", body)
 	}
 }
 

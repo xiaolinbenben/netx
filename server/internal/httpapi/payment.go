@@ -8,10 +8,8 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -36,8 +34,8 @@ func (s *Server) handleCreateAlipayPayment(w http.ResponseWriter, r *http.Reques
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	amountFen, ok := paymentPlans[strings.TrimSpace(req.Plan)]
-	if !ok {
+	amountFen, planExists := paymentPlans[strings.TrimSpace(req.Plan)]
+	if !planExists {
 		fail(w, http.StatusBadRequest, "套餐类型不合法")
 		return
 	}
@@ -62,13 +60,12 @@ func (s *Server) handleCreateAlipayPayment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	form, err := config.pagePayForm(order)
+	paymentURL, err := config.pagePayURL(order)
 	if err != nil {
 		fail(w, http.StatusBadGateway, "生成支付宝支付请求失败")
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(form))
+	ok(w, map[string]string{"url": paymentURL})
 }
 
 func (s *Server) handleAlipayNotify(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +146,7 @@ func alipayConfigFromSettings(settings map[string]string) (alipayConfig, error) 
 	return config, nil
 }
 
-func (c alipayConfig) pagePayForm(order store.PaymentOrder) (string, error) {
+func (c alipayConfig) pagePayURL(order store.PaymentOrder) (string, error) {
 	bizContent, err := json.Marshal(map[string]string{
 		"body":         "NetX " + order.Plan,
 		"subject":      "NetX " + order.Plan,
@@ -178,24 +175,16 @@ func (c alipayConfig) pagePayForm(order store.PaymentOrder) (string, error) {
 	}
 	params["sign"] = sign
 
-	request, err := http.NewRequest(http.MethodPost, c.Gateway, strings.NewReader(formEncode(params)))
+	gateway, err := url.Parse(c.Gateway)
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
-	response, err := (&http.Client{Timeout: 20 * time.Second}).Do(request)
-	if err != nil {
-		return "", err
+	query := gateway.Query()
+	for key, value := range params {
+		query.Set(key, value)
 	}
-	defer response.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(response.Body, 2<<20))
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices || !strings.Contains(strings.ToLower(string(body)), "<form") {
-		return "", fmt.Errorf("支付宝网关返回异常 HTTP %d", response.StatusCode)
-	}
-	return string(body), nil
+	gateway.RawQuery = query.Encode()
+	return gateway.String(), nil
 }
 
 func (c alipayConfig) sign(params map[string]string) (string, error) {
@@ -219,7 +208,7 @@ func (c alipayConfig) verifyNotification(params map[string]string) bool {
 func signContent(params map[string]string) string {
 	keys := make([]string, 0, len(params))
 	for key, value := range params {
-		if key == "sign" || key == "sign_type" || value == "" {
+		if key == "sign" || value == "" {
 			continue
 		}
 		keys = append(keys, key)
@@ -242,23 +231,15 @@ func formValues(values url.Values) map[string]string {
 	return params
 }
 
-func formEncode(params map[string]string) string {
-	values := make(url.Values, len(params))
-	for key, value := range params {
-		values.Set(key, value)
-	}
-	return values.Encode()
-}
-
 func parsePrivateKey(value string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(strings.TrimSpace(value)))
-	if block == nil {
-		return nil, errors.New("私钥 PEM 无效")
+	der, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value))
+	if err != nil {
+		return nil, errors.New("私钥 Base64 格式无效")
 	}
-	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
 		return key, nil
 	}
-	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	key, err := x509.ParsePKCS8PrivateKey(der)
 	if err != nil {
 		return nil, err
 	}
@@ -270,16 +251,16 @@ func parsePrivateKey(value string) (*rsa.PrivateKey, error) {
 }
 
 func parsePublicKey(value string) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode([]byte(strings.TrimSpace(value)))
-	if block == nil {
-		return nil, errors.New("公钥 PEM 无效")
+	der, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value))
+	if err != nil {
+		return nil, errors.New("公钥 Base64 格式无效")
 	}
-	if key, err := x509.ParsePKIXPublicKey(block.Bytes); err == nil {
+	if key, err := x509.ParsePKIXPublicKey(der); err == nil {
 		if rsaKey, ok := key.(*rsa.PublicKey); ok {
 			return rsaKey, nil
 		}
 	}
-	key, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	key, err := x509.ParsePKCS1PublicKey(der)
 	if err != nil {
 		return nil, err
 	}

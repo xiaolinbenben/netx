@@ -55,7 +55,8 @@ func buildSubscription(body []byte) ([]byte, error) {
 		if !ok || strings.TrimSpace(name) == "" {
 			return nil, fmt.Errorf("代理节点缺少名称")
 		}
-		proxyNames = append(proxyNames, name)
+		proxy["name"] = "Netx"
+		proxyNames = append(proxyNames, "Netx")
 	}
 
 	result := clashSubscription{

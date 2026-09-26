@@ -16,14 +16,9 @@ export default function DashboardPage() {
     setMessage("");
     try {
       const response = await fetch("/api/payment/alipay/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan }) });
-      const contentType = response.headers.get("content-type") ?? "";
-      if (!response.ok || !contentType.includes("text/html")) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.message || "创建支付订单失败");
-      }
-      document.open();
-      document.write(await response.text());
-      document.close();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.data?.url) throw new Error(payload.message || "创建支付订单失败");
+      window.location.href = payload.data.url;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "创建支付订单失败");
       setBuying("");
