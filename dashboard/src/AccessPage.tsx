@@ -33,6 +33,9 @@ export default function AccessPage() {
   const [usageError, setUsageError] = useState("");
 
   useEffect(() => {
+    if (window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     let active = true;
     fetch(`/api/subscription/${encodeURIComponent(code)}/usage`)
       .then(async (response) => {
