@@ -166,7 +166,7 @@ func (c alipayConfig) pagePayURL(order store.PaymentOrder) (string, error) {
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
 		"notify_url":  c.RootURL + "/api/payment/alipay/notify",
-		"return_url":  c.RootURL + "/access/" + order.Code,
+		"return_url":  c.RootURL + "/access/" + order.Code + "?showNotice=1",
 		"biz_content": string(bizContent),
 	}
 	sign, err := c.sign(params)

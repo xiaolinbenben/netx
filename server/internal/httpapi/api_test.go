@@ -448,7 +448,7 @@ func TestSubscriptionProxyReturnsYAML(t *testing.T) {
 	if redeemRecorder.Code != http.StatusOK {
 		t.Fatalf("兑换应成功，实际 %d: %s", redeemRecorder.Code, redeemRecorder.Body.String())
 	}
-	if data, ok := redeemPayload["data"].(map[string]any); !ok || len(data) != 1 || data["accessPath"] == nil {
+	if data, ok := redeemPayload["data"].(map[string]any); !ok || len(data) != 1 || data["accessPath"] != "/access/"+code+"?showNotice=1" {
 		t.Fatalf("兑换响应只应返回访问路径，实际 %v", redeemPayload)
 	}
 	recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, "")
