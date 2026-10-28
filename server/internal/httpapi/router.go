@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"netx/server/internal/auth"
@@ -19,6 +20,9 @@ type Server struct {
 	store *store.DB
 	auth  *auth.Manager
 	webFS fs.FS
+
+	proxyMu        sync.Mutex
+	proxyDownUntil time.Time
 }
 
 // New 组装 API、订阅和由 Go 托管的三个前端入口。
@@ -39,6 +43,11 @@ func New(cfg config.Config, db *store.DB, webFS fs.FS) http.Handler {
 	mux.HandleFunc("PATCH /api/admin/codes/{id}", server.requireAuth(server.handleUpdateCodeStatus))
 	mux.HandleFunc("GET /api/admin/settings", server.requireAuth(server.handleGetSettings))
 	mux.HandleFunc("PUT /api/admin/settings", server.requireAuth(server.handleSaveSettings))
+	mux.HandleFunc("GET /api/admin/fetch-proxy", server.requireAuth(server.handleGetFetchProxy))
+	mux.HandleFunc("PUT /api/admin/fetch-proxy", server.requireAuth(server.handleSaveFetchProxy))
+	mux.HandleFunc("DELETE /api/admin/fetch-proxy", server.requireAuth(server.handleDeleteFetchProxy))
+	mux.HandleFunc("POST /api/admin/fetch-proxy/parse", server.requireAuth(server.handleParseFetchProxy))
+	mux.HandleFunc("POST /api/admin/fetch-proxy/test", server.requireAuth(server.handleTestFetchProxy))
 	mux.HandleFunc("POST /api/payment/alipay/create", server.handleCreateAlipayPayment)
 	mux.HandleFunc("POST /api/payment/alipay/notify", server.handleAlipayNotify)
 	mux.HandleFunc("POST /api/redeem", server.handleRedeem)

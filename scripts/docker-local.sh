@@ -30,7 +30,7 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 : "${ADMIN_USERNAME:=admin}"
-: "${ADMIN_PASSWORD:=admin123456}"
+: "${ADMIN_PASSWORD:=admin123}"
 : "${JWT_SECRET:=netx-local-development-secret}"
 export ADMIN_USERNAME ADMIN_PASSWORD JWT_SECRET
 echo "[1/2] 构建 Go 服务镜像（包含落地页、React 用户端和 Ant Design Pro 管理端）..."

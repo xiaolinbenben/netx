@@ -1,9 +1,12 @@
 package httpapi
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -12,10 +15,25 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"netx/server/internal/proxy"
 	"netx/server/internal/store"
 )
 
-const maxSubscriptionSize = 10 << 20
+const (
+	maxSubscriptionSize   = 10 << 20
+	directRequestTimeout  = 20 * time.Second
+	directFallbackTimeout = 8 * time.Second
+	proxyRequestTimeout   = 20 * time.Second
+	directFailureCooldown = 5 * time.Minute
+)
+
+type upstreamDecision int
+
+const (
+	upstreamOK upstreamDecision = iota
+	upstreamStatus
+	upstreamFallback
+)
 
 var errInvalidSubscriptionURL = errors.New("invalid subscription URL")
 
@@ -123,16 +141,116 @@ func (s *Server) fetchSubscription(code string) (*http.Response, error) {
 		return nil, errInvalidSubscriptionURL
 	}
 
-	client := &http.Client{Timeout: 20 * time.Second}
-	upstream, err := client.Get(source.String())
+	endpoint, proxyOn, err := s.enabledFetchProxy()
 	if err != nil {
 		return nil, err
 	}
-	if upstream.StatusCode < http.StatusOK || upstream.StatusCode >= http.StatusMultipleChoices {
-		upstream.Body.Close()
-		return nil, fmt.Errorf("upstream status %d", upstream.StatusCode)
+	rawURL := source.String()
+	if !proxyOn {
+		return readUpstream(requestUpstream(rawURL, directRequestTimeout, nil))
 	}
-	return upstream, nil
+	if s.directCoolingDown() {
+		return readUpstream(requestUpstream(rawURL, proxyRequestTimeout, &endpoint))
+	}
+
+	resp, err := requestUpstream(rawURL, directFallbackTimeout, nil)
+	if err != nil {
+		s.failDirect(endpoint)
+		return readUpstream(requestUpstream(rawURL, proxyRequestTimeout, &endpoint))
+	}
+	decision, restored, peekErr := classifyUpstream(resp)
+	if peekErr != nil || decision == upstreamFallback {
+		if restored != nil {
+			restored.Body.Close()
+		}
+		s.failDirect(endpoint)
+		return readUpstream(requestUpstream(rawURL, proxyRequestTimeout, &endpoint))
+	}
+	s.markDirectHealthy()
+	if decision == upstreamStatus {
+		status := restored.StatusCode
+		restored.Body.Close()
+		return nil, fmt.Errorf("upstream status %d", status)
+	}
+	return restored, nil
+}
+
+func readUpstream(resp *http.Response, err error) (*http.Response, error) {
+	if err != nil {
+		return nil, err
+	}
+	decision, restored, peekErr := classifyUpstream(resp)
+	if peekErr != nil {
+		return nil, peekErr
+	}
+	if decision == upstreamStatus {
+		status := restored.StatusCode
+		restored.Body.Close()
+		return nil, fmt.Errorf("upstream status %d", status)
+	}
+	return restored, nil
+}
+
+func requestUpstream(rawURL string, timeout time.Duration, endpoint *proxy.Endpoint) (*http.Response, error) {
+	client := &http.Client{Timeout: timeout}
+	if endpoint != nil {
+		proxied, err := proxy.HTTPClient(*endpoint, timeout)
+		if err != nil {
+			return nil, err
+		}
+		client = proxied
+	}
+	return client.Get(rawURL)
+}
+
+func classifyUpstream(resp *http.Response) (upstreamDecision, *http.Response, error) {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSubscriptionSize+1))
+	closeErr := resp.Body.Close()
+	if err != nil {
+		return upstreamFallback, nil, err
+	}
+	if closeErr != nil {
+		return upstreamFallback, nil, closeErr
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	if isHTMLBlock(resp.Header.Get("Content-Type"), body) {
+		return upstreamFallback, resp, nil
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return upstreamStatus, resp, nil
+	}
+	return upstreamOK, resp, nil
+}
+
+func isHTMLBlock(contentType string, body []byte) bool {
+	if strings.Contains(strings.ToLower(contentType), "text/html") {
+		return true
+	}
+	trimmed := strings.ToLower(strings.TrimSpace(string(body)))
+	return strings.HasPrefix(trimmed, "<!doctype html") || strings.HasPrefix(trimmed, "<html")
+}
+
+func (s *Server) directCoolingDown() bool {
+	s.proxyMu.Lock()
+	defer s.proxyMu.Unlock()
+	return time.Now().Before(s.proxyDownUntil)
+}
+
+func (s *Server) markDirectDown() {
+	s.proxyMu.Lock()
+	s.proxyDownUntil = time.Now().Add(directFailureCooldown)
+	s.proxyMu.Unlock()
+}
+
+func (s *Server) markDirectHealthy() {
+	s.proxyMu.Lock()
+	s.proxyDownUntil = time.Time{}
+	s.proxyMu.Unlock()
+}
+
+func (s *Server) failDirect(endpoint proxy.Endpoint) {
+	s.markDirectDown()
+	log.Printf("订阅直连失败，改用 SOCKS5 %s", net.JoinHostPort(endpoint.Host, strconv.Itoa(endpoint.Port)))
 }
 
 func parseSubscriptionUsage(value string, now time.Time) (subscriptionUsage, error) {
@@ -226,17 +344,12 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer upstream.Body.Close()
-	if upstream.StatusCode < http.StatusOK || upstream.StatusCode >= http.StatusMultipleChoices {
-		fail(w, http.StatusBadGateway, fmt.Sprintf("上游订阅返回 HTTP %d", upstream.StatusCode))
-		return
-	}
 	body, err := io.ReadAll(io.LimitReader(upstream.Body, maxSubscriptionSize+1))
 	if err != nil {
 		fail(w, http.StatusBadGateway, "读取订阅失败")
 		return
 	}
-	trimmedBody := strings.ToLower(strings.TrimSpace(string(body)))
-	if len(body) > maxSubscriptionSize || strings.Contains(strings.ToLower(upstream.Header.Get("Content-Type")), "text/html") || strings.HasPrefix(trimmedBody, "<!doctype html") || strings.HasPrefix(trimmedBody, "<html") {
+	if len(body) > maxSubscriptionSize || isHTMLBlock(upstream.Header.Get("Content-Type"), body) {
 		fail(w, http.StatusBadGateway, "上游返回的不是 YAML 订阅")
 		return
 	}

@@ -32,7 +32,7 @@ npm run dev
 ./scripts/docker-local.sh
 ```
 
-脚本会构建一个包含落地页、React 用户端、Vue 管理端和 Go 后端的镜像，并启动单一服务。入口地址为 `http://localhost:8000`；脚本优先读取 `deploy/.env`，该文件不存在时使用本地默认管理员账号 `admin` 和密码 `admin123456`。
+脚本会构建一个包含落地页、React 用户端、Vue 管理端和 Go 后端的镜像，并启动单一服务。入口地址为 `http://localhost:8000`；脚本优先读取 `deploy/.env`，该文件不存在时使用本地默认管理员账号 `admin` 和密码 `admin123`。
 
 停止本地服务：
 

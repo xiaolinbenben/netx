@@ -47,3 +47,10 @@ export const generateCodes = (data: { note: string; plan: string; subscriptionUr
 export const updateCodeStatus = (id: number, status: CodeStatus) => request<null>(`/api/admin/codes/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
 export const getSettings = () => request<{ groups: SettingGroup[] }>("/api/admin/settings");
 export const saveSettings = (values: Record<string, string>) => request<null>("/api/admin/settings", { method: "PUT", body: JSON.stringify({ values }) });
+export type FetchProxy = { configured: boolean; enabled: boolean; host: string; port: number; username: string; passwordConfigured: boolean; passwordHint: string };
+export type FetchProxyInput = { enabled: boolean; host: string; port: number; username: string; password: string; updatePassword: boolean };
+export const getFetchProxy = () => request<FetchProxy>("/api/admin/fetch-proxy");
+export const saveFetchProxy = (data: FetchProxyInput) => request<null>("/api/admin/fetch-proxy", { method: "PUT", body: JSON.stringify(data) });
+export const deleteFetchProxy = () => request<null>("/api/admin/fetch-proxy", { method: "DELETE" });
+export const parseFetchProxy = (link: string) => request<{ host: string; port: number; username: string; password: string }>("/api/admin/fetch-proxy/parse", { method: "POST", body: JSON.stringify({ link }) });
+export const testFetchProxy = (data: { host: string; port: number; username: string; password: string }) => request<{ elapsedMs: number }>("/api/admin/fetch-proxy/test", { method: "POST", body: JSON.stringify(data) });
