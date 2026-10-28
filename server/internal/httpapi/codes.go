@@ -125,6 +125,47 @@ func (s *Server) handleUpdateCodeStatus(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (s *Server) handleUpdateCodeDetails(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		fail(w, http.StatusBadRequest, "兑换码 ID 不合法")
+		return
+	}
+
+	var req struct {
+		Note            string `json:"note"`
+		Plan            string `json:"plan"`
+		SubscriptionURL string `json:"subscriptionUrl"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	note := strings.TrimSpace(req.Note)
+	plan := strings.TrimSpace(req.Plan)
+	subscriptionURL := strings.TrimSpace(req.SubscriptionURL)
+	if plan != "极速版" && plan != "至尊版" {
+		fail(w, http.StatusBadRequest, "套餐类型不合法")
+		return
+	}
+	if subscriptionURL == "" {
+		fail(w, http.StatusBadRequest, "请填写 3x-ui 订阅链接")
+		return
+	}
+	if utf8.RuneCountInString(note) > maxNoteLength {
+		fail(w, http.StatusBadRequest, "备注不能超过 100 字")
+		return
+	}
+
+	switch err := s.store.UpdateCodeDetails(id, plan, subscriptionURL, note); {
+	case errors.Is(err, store.ErrCodeNotFound):
+		fail(w, http.StatusNotFound, "兑换码不存在")
+	case err != nil:
+		fail(w, http.StatusInternalServerError, "更新兑换码失败")
+	default:
+		ok(w, nil)
+	}
+}
+
 func (s *Server) handleDeleteCode(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id <= 0 {

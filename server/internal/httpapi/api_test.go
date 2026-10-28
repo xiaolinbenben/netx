@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -437,6 +438,72 @@ func TestDeleteCodeRemovesCodeAndPaymentOrders(t *testing.T) {
 	}
 	if recorder, _ := env.do(t, http.MethodDelete, "/api/admin/codes/abc", nil, env.token); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("非法兑换码 ID 应返回 400，实际 %d", recorder.Code)
+	}
+}
+
+func TestUpdateCodeDetailsSwitchesSubscription(t *testing.T) {
+	var oldHits, newHits atomic.Int32
+	serve := func(hits *atomic.Int32) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hits.Add(1)
+			w.Header().Set("Content-Type", "text/yaml")
+			_, _ = w.Write([]byte("proxies:\n  - name: node\n"))
+		})
+	}
+	oldUpstream := httptest.NewServer(serve(&oldHits))
+	defer oldUpstream.Close()
+	newUpstream := httptest.NewServer(serve(&newHits))
+	defer newUpstream.Close()
+
+	env := newTestEnv(t)
+	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"plan":            "极速版",
+		"note":            "旧备注",
+		"subscriptionUrl": oldUpstream.URL + "/old.yaml",
+	}, env.token)
+	item := itemsOf(t, payload)[0]
+	id := int64(item["id"].(float64))
+	code := item["code"].(string)
+	path := "/api/admin/codes/" + strconv.FormatInt(id, 10)
+	if recorder, _ := env.do(t, http.MethodPost, "/api/redeem", map[string]string{"code": code}, ""); recorder.Code != http.StatusOK {
+		t.Fatalf("兑换应成功，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, ""); recorder.Code != http.StatusOK || oldHits.Load() != 1 {
+		t.Fatalf("编辑前应拉取旧订阅，状态 %d，次数 %d", recorder.Code, oldHits.Load())
+	}
+
+	next := map[string]string{"plan": "至尊版", "note": "新备注", "subscriptionUrl": newUpstream.URL + "/new.yaml"}
+	if recorder, _ := env.do(t, http.MethodPut, path, next, ""); recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("未登录编辑应返回 401，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodPut, path, map[string]string{"plan": "极速版", "subscriptionUrl": "  "}, env.token); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("空订阅地址应返回 400，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodPut, path, map[string]string{"plan": "其他", "subscriptionUrl": next["subscriptionUrl"]}, env.token); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("非法套餐应返回 400，实际 %d", recorder.Code)
+	}
+	unchanged, err := env.db.FindCode(code)
+	if err != nil || unchanged.Plan != "极速版" || unchanged.SubscriptionURL != oldUpstream.URL+"/old.yaml" || unchanged.Status != store.StatusUsed {
+		t.Fatalf("失败的编辑不应改动兑换码: %+v err=%v", unchanged, err)
+	}
+
+	if recorder, _ := env.do(t, http.MethodPut, path, next, env.token); recorder.Code != http.StatusOK {
+		t.Fatalf("编辑应返回 200，实际 %d", recorder.Code)
+	}
+	updated, err := env.db.FindCode(code)
+	if err != nil || updated.Code != code || updated.Status != store.StatusUsed || updated.Plan != "至尊版" || updated.Note != "新备注" || updated.SubscriptionURL != next["subscriptionUrl"] || updated.UsedAt == nil {
+		t.Fatalf("编辑后兑换码或状态不正确: %+v err=%v", updated, err)
+	}
+	if recorder, _ := env.do(t, http.MethodGet, "/sub/"+code, nil, ""); recorder.Code != http.StatusOK || newHits.Load() != 1 || oldHits.Load() != 1 {
+		t.Fatalf("编辑后应拉取新订阅，状态 %d，旧次数 %d，新次数 %d", recorder.Code, oldHits.Load(), newHits.Load())
+	}
+	_, listed := env.do(t, http.MethodGet, "/api/admin/codes?keyword=新备注", nil, env.token)
+	rows := itemsOf(t, listed)
+	if len(rows) != 1 || rows[0]["code"] != code || rows[0]["plan"] != "至尊版" || rows[0]["note"] != "新备注" {
+		t.Fatalf("列表未反映编辑结果: %v", rows)
+	}
+	if recorder, _ := env.do(t, http.MethodPut, "/api/admin/codes/999999", next, env.token); recorder.Code != http.StatusNotFound {
+		t.Fatalf("不存在的兑换码应返回 404，实际 %d", recorder.Code)
 	}
 }
 

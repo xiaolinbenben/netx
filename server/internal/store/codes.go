@@ -239,6 +239,25 @@ func (d *DB) UpdateCodeStatus(id int64, status string) error {
 	return err
 }
 
+// UpdateCodeDetails 更新套餐、订阅地址和备注，不改变兑换码与状态。
+func (d *DB) UpdateCodeDetails(id int64, plan, subscriptionURL, note string) error {
+	result, err := d.Exec(
+		"UPDATE codes SET plan = ?, subscription_url = ?, note = ? WHERE id = ?",
+		plan, subscriptionURL, note, id,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return ErrCodeNotFound
+	}
+	return nil
+}
+
 // DeleteCode 物理删除兑换码及其支付订单。兑换码不存在时返回 ErrCodeNotFound。
 func (d *DB) DeleteCode(id int64) error {
 	tx, err := d.Begin()
