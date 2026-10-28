@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -67,14 +68,25 @@ func buildSubscription(body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("订阅不包含代理节点")
 	}
 
-	proxyNames := make([]string, 0, len(upstream.Proxies))
 	for _, proxy := range upstream.Proxies {
 		name, ok := proxy["name"].(string)
 		if !ok || strings.TrimSpace(name) == "" {
 			return nil, fmt.Errorf("代理节点缺少名称")
 		}
-		proxy["name"] = "Netx"
-		proxyNames = append(proxyNames, "Netx")
+	}
+	sort.SliceStable(upstream.Proxies, func(i, j int) bool {
+		return lessProxy(upstream.Proxies[i], upstream.Proxies[j])
+	})
+
+	proxyNames := make([]string, 0, len(upstream.Proxies))
+	multiple := len(upstream.Proxies) > 1
+	for i, proxy := range upstream.Proxies {
+		name := "Netx"
+		if multiple {
+			name = fmt.Sprintf("Netx-%d", i+1)
+		}
+		proxy["name"] = name
+		proxyNames = append(proxyNames, name)
 	}
 
 	result := clashSubscription{
@@ -116,6 +128,30 @@ func buildSubscription(body []byte) ([]byte, error) {
 		},
 	}
 	return yaml.Marshal(result)
+}
+
+func lessProxy(left, right map[string]any) bool {
+	leftServer, _ := left["server"].(string)
+	rightServer, _ := right["server"].(string)
+	leftIP := net.ParseIP(leftServer)
+	rightIP := net.ParseIP(rightServer)
+	leftV6 := leftIP != nil && leftIP.To4() == nil
+	rightV6 := rightIP != nil && rightIP.To4() == nil
+	if leftV6 != rightV6 {
+		return !leftV6
+	}
+	return protocolOrder(left["type"]) < protocolOrder(right["type"])
+}
+
+func protocolOrder(kind any) int {
+	switch kind {
+	case "vless":
+		return 0
+	case "hysteria2":
+		return 1
+	default:
+		return 2
+	}
 }
 
 type subscriptionUsage struct {
