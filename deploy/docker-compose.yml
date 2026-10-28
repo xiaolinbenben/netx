@@ -2,7 +2,8 @@ name: netx
 
 services:
   server:
-    image: beisitech/netx:latest
+    image: netx:latest
+    pull_policy: never
     restart: unless-stopped
     ports:
       - "8000:8000"

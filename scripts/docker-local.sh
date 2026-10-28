@@ -3,9 +3,9 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/deploy/docker-compose.yml"
-ENV_FILE="${NETX_ENV_FILE:-$ROOT_DIR/deploy/.env}"
+ENV_FILE="$ROOT_DIR/deploy/.env"
 PROJECT_NAME="netx-local"
-IMAGE_NAME="beisitech/netx:latest"
+IMAGE_NAME="netx:latest"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "错误：未找到 Docker，请先安装并启动 Docker Desktop。" >&2

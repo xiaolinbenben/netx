@@ -5,6 +5,7 @@ node_modules/
 .env*.local
 .DS_Store
 deploy/.env
+scripts/.env
 
 # 后端
 server/.env

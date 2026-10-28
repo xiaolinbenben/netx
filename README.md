@@ -22,7 +22,7 @@ npm run dev
 
 开发服务启动后访问 `http://localhost:3000/dashboard`，接口请求会代理到 `http://localhost:8000`。
 
-## Docker 部署与 CI/CD
+## Docker 部署
 
 ### 本地 Docker 一键启动
 
@@ -40,37 +40,28 @@ npm run dev
 docker compose --project-name netx-local --file deploy/docker-compose.yml down
 ```
 
-生产环境使用一个 Go 服务容器，镜像固定为 `beisitech/netx:latest`。CI 同时发布 Git commit SHA 标签，回滚时将服务器上的 `deploy/docker-compose.yml` 中的 `latest` 改为对应 SHA，再重新执行 Compose。外部 HTTPS 反向代理（如服务器已有）只需要转发到该容器的 `8000` 端口。
+### 生产部署
 
-推送 `main` 后，[GitHub Actions](.github/workflows/deploy.yml) 会构建 `linux/amd64` 镜像，推送 `latest` 和 Git commit SHA 两种标签，再通过 SSH 将 [Compose 配置](deploy/docker-compose.yml) 部署到服务器的 `/opt/netx/deploy`。
+生产环境使用一个 Go 服务容器。`make deploy` 在本机构建 `linux/amd64` 镜像 `netx:latest`，再把镜像和 [Compose 配置](deploy/docker-compose.yml) 直接传到服务器的 `/opt/netx/deploy` 并启动。外部 HTTPS 反向代理只需要转发到该容器的 `8000` 端口。
 
-Docker Hub 需要新建一个名为 `netx` 的公共仓库，并创建具有 Read & Write 权限的 Access Token 用于 GitHub Actions 推送镜像。服务器拉取公共镜像不需要 Docker Hub 登录。GitHub 仓库的 Settings -> Secrets and variables -> Actions 中配置：
-
-| Secret                 | 说明                                                                  |
-| ---------------------- | --------------------------------------------------------------------- |
-| `DOCKERHUB_TOKEN`    | Docker Hub Access Token，用于 GitHub Actions 推送镜像，不使用账号密码 |
-
-再创建名为 `production` 的 GitHub Environment，并在其中配置部署 Secrets：
-
-| Secret             | 说明                                            |
-| ------------------ | ----------------------------------------------- |
-| `SERVER_HOST`    | Linux 服务器域名或 IP                           |
-| `SERVER_USER`    | 可运行 Docker 的 SSH 用户，不配置默认为`root` |
-| `SERVER_SSH_KEY` | SSH 私钥全文                                    |
-
-服务器首次部署前执行一次初始化，并编辑生产配置：
+本机需要 Docker 和 `sshpass`。macOS 可安装：
 
 ```bash
-sudo mkdir -p /opt/netx/deploy
-sudo chown -R "$USER":"$USER" /opt/netx
-cd /opt/netx/deploy
-# 首次推送 main 后，CI 会上传这份模板
-cp .env.example .env
-chmod 600 .env
-vim .env
+brew install hudochenkov/sshpass/sshpass
 ```
 
-服务器需安装 Docker Engine 和 Compose 插件，部署用户需有权限直接执行 `docker`。SQLite 数据保存在 Docker named volume `netx_server-data` 中，更新容器不会删除数据。
+配置部署参数后执行部署：
+
+```bash
+cp scripts/.env.example scripts/.env
+chmod 600 scripts/.env
+# 填写服务器 IP、SSH 密码，以及 ADMIN_USERNAME、ADMIN_PASSWORD、JWT_SECRET
+make deploy
+```
+
+`scripts/.env` 已被 Git 忽略。`SERVER_USER` 留空时默认为 `root`，`DEPLOY_PATH` 留空时默认为 `/opt/netx`。脚本把三个应用变量写成服务器上的 `deploy/.env`，权限为 `600`。SSH 密码只留在本机。
+
+服务器需安装 Docker Engine 和 Compose 插件，部署用户需有权限直接执行 `docker`。SQLite 数据保存在 Docker named volume `netx_server-data` 中，更新容器不会删除数据。回滚时检出对应提交，再执行 `make deploy`。
 
 ## 管理端与后端
 

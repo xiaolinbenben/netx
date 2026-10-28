@@ -1,4 +1,4 @@
-.PHONY: admin-install admin-dev admin-build dashboard-install dashboard-dev dashboard-build server-dev server-build test build
+.PHONY: admin-install admin-dev admin-build dashboard-install dashboard-dev dashboard-build server-dev server-build test build deploy
 
 # 安装 React + Ant Design Pro 管理端依赖
 admin-install:
@@ -36,3 +36,7 @@ server-build: admin-build dashboard-build
 
 # 完整构建
 build: server-build
+
+# 构建 linux/amd64 镜像并部署到服务器（读取 scripts/.env）
+deploy:
+	./scripts/deploy.sh
