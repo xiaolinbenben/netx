@@ -45,6 +45,7 @@ export const login = (username: string, password: string) => request<{ accessTok
 export const listCodes = (params: Record<string, string | number>) => request<{ items: RedeemCode[]; total: number }>(`/api/admin/codes?${new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]))}`);
 export const generateCodes = (data: { note: string; plan: string; subscriptionUrl: string }) => request<{ items: RedeemCode[] }>("/api/admin/codes", { method: "POST", body: JSON.stringify(data) });
 export const updateCodeStatus = (id: number, status: CodeStatus) => request<null>(`/api/admin/codes/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+export const deleteCode = (id: number) => request<null>(`/api/admin/codes/${id}`, { method: "DELETE" });
 export const getSettings = () => request<{ groups: SettingGroup[] }>("/api/admin/settings");
 export const saveSettings = (values: Record<string, string>) => request<null>("/api/admin/settings", { method: "PUT", body: JSON.stringify({ values }) });
 export type FetchProxy = { configured: boolean; enabled: boolean; host: string; port: number; username: string; passwordConfigured: boolean; passwordHint: string };

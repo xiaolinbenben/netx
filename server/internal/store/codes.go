@@ -238,3 +238,28 @@ func (d *DB) UpdateCodeStatus(id int64, status string) error {
 	_, err = d.Exec("UPDATE codes SET status = ? WHERE id = ?", status, id)
 	return err
 }
+
+// DeleteCode 物理删除兑换码及其支付订单。兑换码不存在时返回 ErrCodeNotFound。
+func (d *DB) DeleteCode(id int64) error {
+	tx, err := d.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.Exec("DELETE FROM payment_orders WHERE code_id = ?", id); err != nil {
+		return err
+	}
+	result, err := tx.Exec("DELETE FROM codes WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return ErrCodeNotFound
+	}
+	return tx.Commit()
+}

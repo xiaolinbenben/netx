@@ -125,6 +125,23 @@ func (s *Server) handleUpdateCodeStatus(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (s *Server) handleDeleteCode(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		fail(w, http.StatusBadRequest, "兑换码 ID 不合法")
+		return
+	}
+
+	switch err := s.store.DeleteCode(id); {
+	case errors.Is(err, store.ErrCodeNotFound):
+		fail(w, http.StatusNotFound, "兑换码不存在")
+	case err != nil:
+		fail(w, http.StatusInternalServerError, "删除兑换码失败")
+	default:
+		ok(w, nil)
+	}
+}
+
 func codeViews(items []store.Code) []codeView {
 	views := make([]codeView, 0, len(items))
 	for _, item := range items {

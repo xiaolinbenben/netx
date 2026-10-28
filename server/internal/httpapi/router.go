@@ -41,6 +41,7 @@ func New(cfg config.Config, db *store.DB, webFS fs.FS) http.Handler {
 	mux.HandleFunc("GET /api/admin/codes", server.requireAuth(server.handleListCodes))
 	mux.HandleFunc("POST /api/admin/codes", server.requireAuth(server.handleGenerateCodes))
 	mux.HandleFunc("PATCH /api/admin/codes/{id}", server.requireAuth(server.handleUpdateCodeStatus))
+	mux.HandleFunc("DELETE /api/admin/codes/{id}", server.requireAuth(server.handleDeleteCode))
 	mux.HandleFunc("GET /api/admin/settings", server.requireAuth(server.handleGetSettings))
 	mux.HandleFunc("PUT /api/admin/settings", server.requireAuth(server.handleSaveSettings))
 	mux.HandleFunc("GET /api/admin/fetch-proxy", server.requireAuth(server.handleGetFetchProxy))

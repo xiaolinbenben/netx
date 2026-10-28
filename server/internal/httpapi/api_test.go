@@ -351,6 +351,95 @@ func TestVoidAndRestoreCode(t *testing.T) {
 	}
 }
 
+func TestDeleteCodeRemovesCodeAndPaymentOrders(t *testing.T) {
+	env := newTestEnv(t)
+
+	_, payload := env.do(t, http.MethodPost, "/api/admin/codes", map[string]any{
+		"note":            "待删",
+		"subscriptionUrl": "https://upstream.example/profile.yaml",
+	}, env.token)
+	unused := itemsOf(t, payload)[0]
+	unusedID := int64(unused["id"].(float64))
+	unusedCode := unused["code"].(string)
+	unusedPath := "/api/admin/codes/" + strconv.FormatInt(unusedID, 10)
+
+	if recorder, _ := env.do(t, http.MethodDelete, unusedPath, nil, ""); recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("未登录删除应返回 401，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodDelete, unusedPath, nil, env.token); recorder.Code != http.StatusOK {
+		t.Fatalf("删除未使用兑换码应返回 200，实际 %d", recorder.Code)
+	}
+	_, listed := env.do(t, http.MethodGet, "/api/admin/codes?keyword="+unusedCode, nil, env.token)
+	if total := totalOf(t, listed); total != 0 {
+		t.Fatalf("删除后列表不应再出现该兑换码，实际 %d", total)
+	}
+	if _, err := env.db.FindCode(unusedCode); err != store.ErrCodeNotFound {
+		t.Fatalf("删除后数据库中不应保留兑换码，实际 %v", err)
+	}
+
+	voided, err := env.db.CreateCodeWithDetails("极速版", "https://upstream.example/void.yaml", "作废")
+	if err != nil {
+		t.Fatalf("准备已作废兑换码失败: %v", err)
+	}
+	if err := env.db.UpdateCodeStatus(voided.ID, store.StatusVoid); err != nil {
+		t.Fatalf("作废兑换码失败: %v", err)
+	}
+	voidedPath := "/api/admin/codes/" + strconv.FormatInt(voided.ID, 10)
+	if recorder, _ := env.do(t, http.MethodDelete, voidedPath, nil, env.token); recorder.Code != http.StatusOK {
+		t.Fatalf("删除已作废兑换码应返回 200，实际 %d", recorder.Code)
+	}
+	if _, err := env.db.FindCode(voided.Code); err != store.ErrCodeNotFound {
+		t.Fatalf("已作废兑换码删除后不应保留，实际 %v", err)
+	}
+
+	used, err := env.db.CreateCodeWithDetails("极速版", "https://upstream.example/used.yaml", "已使用")
+	if err != nil {
+		t.Fatalf("准备已使用兑换码失败: %v", err)
+	}
+	if _, err := env.db.Exec("UPDATE codes SET status = ?, used_at = ? WHERE id = ?", store.StatusUsed, time.Now().Unix(), used.ID); err != nil {
+		t.Fatalf("标记已使用失败: %v", err)
+	}
+	usedPath := "/api/admin/codes/" + strconv.FormatInt(used.ID, 10)
+	if recorder, _ := env.do(t, http.MethodDelete, usedPath, nil, env.token); recorder.Code != http.StatusOK {
+		t.Fatalf("删除已使用兑换码应返回 200，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodGet, "/sub/"+used.Code, nil, ""); recorder.Code != http.StatusNotFound {
+		t.Fatalf("删除后订阅接口应返回 404，实际 %d", recorder.Code)
+	}
+
+	reserved, err := env.db.CreateCodeWithDetails("至尊版", "https://upstream.example/reserved.yaml", "待支付")
+	if err != nil {
+		t.Fatalf("准备待支付兑换码失败: %v", err)
+	}
+	order, err := env.db.CreatePaymentOrder("至尊版", 88000)
+	if err != nil {
+		t.Fatalf("创建支付订单失败: %v", err)
+	}
+	if order.CodeID != reserved.ID {
+		t.Fatalf("支付订单应绑定待支付兑换码: order=%+v code=%+v", order, reserved)
+	}
+	reservedPath := "/api/admin/codes/" + strconv.FormatInt(reserved.ID, 10)
+	if recorder, _ := env.do(t, http.MethodDelete, reservedPath, nil, env.token); recorder.Code != http.StatusOK {
+		t.Fatalf("删除待支付兑换码应返回 200，实际 %d", recorder.Code)
+	}
+	var orders int
+	if err := env.db.QueryRow("SELECT COUNT(*) FROM payment_orders WHERE code_id = ?", reserved.ID).Scan(&orders); err != nil || orders != 0 {
+		t.Fatalf("删除后支付订单应一并消失，实际 %d, err=%v", orders, err)
+	}
+	if _, err := env.db.FindCode(reserved.Code); err != store.ErrCodeNotFound {
+		t.Fatalf("待支付兑换码删除后不应保留，实际 %v", err)
+	}
+	if recorder, _ := env.do(t, http.MethodDelete, reservedPath, nil, env.token); recorder.Code != http.StatusNotFound {
+		t.Fatalf("重复删除应返回 404，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodDelete, "/api/admin/codes/999999", nil, env.token); recorder.Code != http.StatusNotFound {
+		t.Fatalf("不存在的兑换码应返回 404，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodDelete, "/api/admin/codes/abc", nil, env.token); recorder.Code != http.StatusBadRequest {
+		t.Fatalf("非法兑换码 ID 应返回 400，实际 %d", recorder.Code)
+	}
+}
+
 func TestSettingsReadWriteAndMask(t *testing.T) {
 	env := newTestEnv(t)
 
