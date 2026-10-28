@@ -15,24 +15,25 @@ import (
 )
 
 type Server struct {
-	cfg     config.Config
-	store   *store.DB
-	auth    *auth.Manager
-	webFS   fs.FS
+	cfg   config.Config
+	store *store.DB
+	auth  *auth.Manager
+	webFS fs.FS
 }
 
 // New 组装 API、订阅和由 Go 托管的三个前端入口。
 func New(cfg config.Config, db *store.DB, webFS fs.FS) http.Handler {
 	server := &Server{
-		cfg:     cfg,
-		store:   db,
-		auth:    auth.NewManager(cfg.JWTSecret),
-		webFS:   webFS,
+		cfg:   cfg,
+		store: db,
+		auth:  auth.NewManager(cfg.JWTSecret),
+		webFS: webFS,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/admin/login", server.handleLogin)
-	mux.HandleFunc("POST /api/admin/refresh-token", server.requireAuth(server.handleRefreshToken))
+	// 刷新只校验请求体里的刷新令牌。访问令牌过期时仍然要能调用。
+	mux.HandleFunc("POST /api/admin/refresh-token", server.handleRefreshToken)
 	mux.HandleFunc("GET /api/admin/codes", server.requireAuth(server.handleListCodes))
 	mux.HandleFunc("POST /api/admin/codes", server.requireAuth(server.handleGenerateCodes))
 	mux.HandleFunc("PATCH /api/admin/codes/{id}", server.requireAuth(server.handleUpdateCodeStatus))

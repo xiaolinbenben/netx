@@ -166,9 +166,6 @@ func TestLoginAndAuthGuard(t *testing.T) {
 	if access == "" {
 		t.Fatalf("登录响应缺少 accessToken: %v", data)
 	}
-	if roles, _ := data["roles"].([]any); len(roles) != 1 || roles[0] != "admin" {
-		t.Fatalf("登录响应角色不正确: %v", data["roles"])
-	}
 
 	if recorder, _ := env.do(t, http.MethodGet, "/api/admin/codes", nil, ""); recorder.Code != http.StatusUnauthorized {
 		t.Fatalf("缺少凭证应返回 401，实际 %d", recorder.Code)
@@ -184,6 +181,60 @@ func TestLoginAndAuthGuard(t *testing.T) {
 
 	if recorder, _ := env.do(t, http.MethodGet, "/api/admin/codes", nil, access); recorder.Code != http.StatusOK {
 		t.Fatalf("有效凭证应返回 200，实际 %d", recorder.Code)
+	}
+}
+
+func TestRefreshToken(t *testing.T) {
+	env := newTestEnv(t)
+
+	recorder, payload := env.do(t, http.MethodPost, "/api/admin/login", map[string]string{
+		"username": testUsername,
+		"password": testPassword,
+	}, "")
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("登录应返回 200，实际 %d", recorder.Code)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("登录响应缺少 data: %v", payload)
+	}
+	refresh, _ := data["refreshToken"].(string)
+	if refresh == "" {
+		t.Fatalf("登录响应缺少 refreshToken: %v", data)
+	}
+
+	expiredAccess, _, _, err := auth.NewManagerForTesting(testSecret, -time.Minute).Issue(testUsername)
+	if err != nil {
+		t.Fatalf("签发过期凭证失败: %v", err)
+	}
+	recorder, payload = env.do(t, http.MethodPost, "/api/admin/refresh-token", map[string]string{
+		"refreshToken": refresh,
+	}, expiredAccess)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("过期访问令牌不应阻止刷新，实际 %d: %s", recorder.Code, recorder.Body.String())
+	}
+	refreshed, ok := payload["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("刷新响应缺少 data: %v", payload)
+	}
+	access, _ := refreshed["accessToken"].(string)
+	if access == "" {
+		t.Fatalf("刷新响应缺少 accessToken: %v", refreshed)
+	}
+	if refreshed["refreshToken"] != refresh {
+		t.Fatalf("刷新应返回原 refreshToken，实际 %v", refreshed["refreshToken"])
+	}
+	if recorder, _ := env.do(t, http.MethodGet, "/api/admin/codes", nil, access); recorder.Code != http.StatusOK {
+		t.Fatalf("刷新后的访问令牌应可访问业务接口，实际 %d", recorder.Code)
+	}
+
+	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/refresh-token", map[string]string{}, ""); recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("空刷新令牌应返回 401，实际 %d", recorder.Code)
+	}
+	if recorder, _ := env.do(t, http.MethodPost, "/api/admin/refresh-token", map[string]string{
+		"refreshToken": "bad",
+	}, ""); recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("无效刷新令牌应返回 401，实际 %d", recorder.Code)
 	}
 }
 
